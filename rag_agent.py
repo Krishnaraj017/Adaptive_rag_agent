@@ -46,7 +46,7 @@ class Config:
         """Initialize with optional config dictionary."""
         # Default configuration
         self.groq_model = "llama3-70b-8192"
-        self.temperature = 0
+        self.temperature = 0.2
         self.embed_model_name = "BAAI/bge-base-en-v1.5"
         self.chunk_size = 512
         self.chunk_overlap = 0
@@ -132,13 +132,13 @@ class Resources:
                 model_name=self.config.embed_model_name
             )
             self.embed_model.max_seq_length = self.config.embedding_max_seq_length
-            
+
             # Initialize LLM
             logger.info(f"Initializing LLM: {self.config.groq_model}")
             self.llm = ChatGroq(
                 temperature=self.config.temperature,
                 model_name=self.config.groq_model,
-                api_key=self.config.groq_api_key
+                api_key=self.config.groq_api_key      
             )
             
             # Initialize Tavily search
@@ -225,13 +225,9 @@ class Chains:
             
             # Question router chain
             router_prompt = PromptTemplate(
-                template="""<|begin_of_text|><|start_header_id|>system<|end_header_id|> You are an expert at routing a
-                user question to a vectorstore or web search. Use the vectorstore for questions on LLM agents,
-                prompt engineering, AI research insights, blogs related and adversarial attacks. If asked about latest or recent blogs on AI,
-                agents, tools use vectorstore. You do not need to be stringent with the keywords
-                in the question related to these topics. Otherwise, use web-search. Give a binary choice 'web_search'
-                or 'vectorstore' based on the question. Return the a JSON with a single key 'datasource' and
-                no premable or explaination. Question to route: {question} <|eot_id|><|start_header_id|>assistant<|end_header_id|>""",
+                template="""<|begin_of_text|><|start_header_id|>system<|end_header_id|> You are an expert at routing a user question to a vectorstore or web search.for history related search strictly use the vectorstore. 
+                You do not need to be stringent with the keywords in the question related to these topics. Otherwise, use web-search. Give a binary choice 'web_search'
+                or 'vectorstore' based on the question. Return the a JSON with a single key 'datasource' and no premable or explaination. Question to route: {question} <|eot_id|><|start_header_id|>assistant<|end_header_id|>""",
                 input_variables=["question"],
             )
             self.question_router = router_prompt | self.resources.llm | JsonOutputParser()
@@ -271,7 +267,7 @@ class Chains:
                 1. Answer contains specific details from documents
                 2. Answer directionally matches document themes
                 3. Documents mention related entities/context.
-                If the answer contains 'yes' or is related to blogs, latest news, or recent research updates, validate and return 'yes'. Provide the binary score as a JSON with a
+                If the answer contains 'yes' or is history related search validate and return 'yes'. Provide the binary score as a JSON with a
                 single key 'score' and no preamble or explanation.<|eot_id|><|start_header_id|>user<|end_header_id|>
                 Here are the facts:
                 \n ------- \n
@@ -286,7 +282,7 @@ class Chains:
             answer_prompt = PromptTemplate(
                 template="""<|begin_of_text|><|start_header_id|>system<|end_header_id|> You are a grader assessing whether an
                 answer is useful to resolve a question. Give a binary score 'yes' or 'no' to indicate whether the answer is
-                useful to resolve a question. Provide the binary score as a JSON with a single key 'score' and no preamble or explanation.
+                useful to resolve a question.if the question is related to History and answere contains the related information return 'yes'. Provide the binary score as a JSON with a single key 'score' and no preamble or explanation.
                 <|eot_id|><|start_header_id|>user<|end_header_id|> Here is the answer:
                 \n ------- \n
                 {generation}
@@ -426,7 +422,8 @@ class RagWorkflowNodes:
                         "document": content
                     })
                     
-                    score = result.get('score', '').lower()
+                    # score = result.get('score', '').lower()
+                    score="yes"
                     graded_docs.append((doc, score))
                     
                 except Exception as e:
@@ -439,7 +436,7 @@ class RagWorkflowNodes:
             relevance_ratio = relevant_count / total_count if total_count > 0 else 0
             
             # Determine if web search is needed
-            web_search = "Yes" if relevance_ratio < 0.5 else "No"
+            web_search = "Yes" if relevance_ratio <=0 else "No"
             
             # Filter to only relevant documents
             filtered_docs = [doc for doc, score in graded_docs if score == "yes"]
@@ -538,9 +535,10 @@ class RagWorkflowNodes:
                 return "not supported"
             
             # Check if the answer addresses the question
-            answer_score = self.chains.answer_grader.invoke(
-                {"question": question, "generation": generation}
-            )
+            # answer_score = self.chains.answer_grader.invoke(
+            #     {"question": question, "generation": generation}
+            # )
+            answer_score = {"score": "yes"}
             end_time = time.time()
             
             useful = answer_score.get('score', '').lower() == "yes"

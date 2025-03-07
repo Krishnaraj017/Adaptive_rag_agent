@@ -18,6 +18,11 @@ from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_groq import ChatGroq
 from langgraph.graph import END, StateGraph
 
+
+# memory saver
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.prebuilt import create_react_agent
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -162,8 +167,45 @@ class Resources:
         """Load documents from URLs."""
         try:
             logger.info(f"Loading documents from {len(urls)} URLs")
-            docs = [WebBaseLoader(url).load() for url in urls]
-            docs_list = [item for sublist in docs for item in sublist]
+            docs_list = []
+            
+            for url in urls:
+                if "drive.google.com" in url and "export=download" in url:
+                    # Extract file ID from Google Drive URL
+                    file_id = None
+                    if "id=" in url:
+                        file_id = url.split("id=")[1].split("&")[0]
+                    
+                    if file_id:
+                        # Use a temporary file to download and process the PDF
+                        import tempfile
+                        import requests
+                        from langchain_community.document_loaders import PyPDFLoader
+                        
+                        with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_file:
+                            response = requests.get(url, stream=True)
+                            if response.status_code == 200:
+                                for chunk in response.iter_content(chunk_size=8192):
+                                    temp_file.write(chunk)
+                                temp_file.flush()
+                                
+                                # Use PyPDFLoader for the downloaded PDF
+                                pdf_loader = PyPDFLoader(temp_file.name)
+                                pdf_docs = pdf_loader.load()
+                                docs_list.extend(pdf_docs)
+                            else:
+                                logger.error(f"Failed to download PDF from {url}")
+                                
+                        # Clean up the temporary file
+                        import os
+                        os.unlink(temp_file.name)
+                    else:
+                        logger.error(f"Could not extract file ID from Google Drive URL: {url}")
+                else:
+                    # Use WebBaseLoader for regular web pages
+                    web_docs = WebBaseLoader(url).load()
+                    docs_list.extend(web_docs)
+                    
             logger.info(f"Loaded {len(docs_list)} documents")
             return docs_list
         except Exception as e:
@@ -225,7 +267,7 @@ class Chains:
             
             # Question router chain
             router_prompt = PromptTemplate(
-                template="""<|begin_of_text|><|start_header_id|>system<|end_header_id|> You are an expert at routing a user question to a vectorstore or web search.for history related search strictly use the vectorstore. 
+                template="""<|begin_of_text|><|start_header_id|>system<|end_header_id|> You are an expert at routing a user question to a vectorstore or web search. try to strictly use the vectorstore. 
                 You do not need to be stringent with the keywords in the question related to these topics. Otherwise, use web-search. Give a binary choice 'web_search'
                 or 'vectorstore' based on the question. Return the a JSON with a single key 'datasource' and no premable or explaination. Question to route: {question} <|eot_id|><|start_header_id|>assistant<|end_header_id|>""",
                 input_variables=["question"],
@@ -349,6 +391,7 @@ class RagWorkflowNodes:
             start_time = time.time()
             documents = self.resources.retriever.invoke(question)
             end_time = time.time()
+          
             logger.info(f"Retrieved {len(documents)} documents in {end_time - start_time:.2f} seconds")
             
             return {"documents": documents, "question": question}
@@ -477,7 +520,10 @@ class RagWorkflowNodes:
             logger.info("Generating answer")
             question = state["question"]
             documents = state.get("documents", [])
-            
+            print("+++++++++++++++++++++++++++++++++")
+            print(documents)
+            print("------------------")
+            print(state.get("documents", []))
             if not documents:
                 logger.warning("No documents available for generation")
                 return {
@@ -563,7 +609,7 @@ class RagWorkflowNodes:
 class RagAgent:
     """Production-grade RAG agent with proper error handling and monitoring."""
     
-    def __init__(self, config_dict: Optional[Dict[str, Any]] = None):
+    def __init__(self, config_dict: Optional[Dict[str, Any]] = None,):
         """Initialize the RAG agent with optional configuration."""
         self.config = Config(config_dict)
         self.resources = None
@@ -591,7 +637,8 @@ class RagAgent:
             # Initialize chains
             self.chains = Chains(self.resources)
             self.chains.initialize()
-            
+            # memory
+
             # Initialize workflow nodes
             self.nodes = RagWorkflowNodes(self.chains, self.resources)
             
@@ -650,9 +697,10 @@ class RagAgent:
                     "not useful": "websearch",
                 }
             )
-            
+            memory = MemorySaver()
+
             # Compile workflow
-            self.app = self.workflow.compile()
+            self.app = self.workflow.compile(checkpointer=memory)
             logger.info("Workflow graph built successfully")
             
         except Exception as e:
@@ -668,7 +716,8 @@ class RagAgent:
             result = None
             
             # Stream results
-            for output in self.app.stream({"question": question}):
+            for output in self.app.stream({"question": question},config={"configurable": {"thread_id": "1"}},
+):
                 result = output
             
             end_time = time.time()
@@ -676,6 +725,8 @@ class RagAgent:
             
             if result and "generation" in result.get(list(result.keys())[-1], {}):
                 final_result = result[list(result.keys())[-1]]
+              
+                print("+++++++++++++++++++++++++++++++++")
                 return {
                     "answer": final_result.get("generation", ""),
                     "sources": [

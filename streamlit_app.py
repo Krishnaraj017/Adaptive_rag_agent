@@ -5,60 +5,11 @@ from rag_agent import RagAgent
 # Streamlit app title
 st.title("RAG Pipeline with Streamlit")
 st.subheader("Ask questions about your documents")
-# default_urls = [
-#     # NASA Official Sources
-#     "https://www.nasa.gov/mission_pages/station/research/index.html",  # ISS Research
-#     "https://mars.nasa.gov/mars2020/mission/overview/",  # Mars Exploration Program
-    
-#     # Scientific Research and Publications
-#     "https://www.nature.com/articles/d41586-024-space-section",  # Nature Space Research
-#     "https://www.science.org/topic/article-type/research-article/space-astronomy",  # Science Magazine Space Section
-    
-#     # Space Technology and Innovation
-#     "https://www.spacex.com/updates/",  # SpaceX Mission Updates
-#     "https://www.blueorigin.com/news/",  # Blue Origin Innovation
-    
-#     # International Space Agencies
-#     "https://www.esa.int/Science_Exploration/Space_Science",  # European Space Agency Research
-#     "https://www.isro.gov.in/research-and-development",  # Indian Space Research Organisation
-    
-#     # Academic and Research Institutions
-#     "https://www.jpl.nasa.gov/news",  # Jet Propulsion Laboratory
-#     "https://www.seti.org/research",  # SETI Institute Research
-    
-#     # Planetary and Astronomical Research
-#     "https://www.planetary.org/explore/space-topics/",  # The Planetary Society
-#     "https://www.space.com/science",  # Space.com Scientific Research
-# ]
-# Define default URLs
+
 default_urls = [
-    # "https://www.gutenberg.org/files/15697/15697-pdf.pdf",
-    "https://drive.google.com/uc?export=download&id=1rK8J_I7AyT9sqtHmzl0xrxLtHiuukco9"
+    
+    "https://drive.google.com/uc?export=download&id=1rK8J_I7AyT9sqtHmzl0xrxLtHiuukco9",
 
-
-    # NASA Official Sources
-    # "https://www.nasa.gov/mission_pages/station/research/index.html",  # ISS Research
-    # "https://mars.nasa.gov/mars2020/mission/overview/",  # Mars Exploration Program
-    
-    # # Scientific Research and Publications
-    # "https://www.nature.com/articles/d41586-024-space-section",  # Nature Space Research
-    # "https://www.science.org/topic/article-type/research-article/space-astronomy",  # Science Magazine Space Section
-    
-    # # Space Technology and Innovation
-    # "https://www.spacex.com/updates/",  # SpaceX Mission Updates
-    # "https://www.blueorigin.com/news/",  # Blue Origin Innovation
-    
-    # # International Space Agencies
-    # "https://www.esa.int/Science_Exploration/Space_Science",  # European Space Agency Research
-    # "https://www.isro.gov.in/research-and-development",  # Indian Space Research Organisation
-    
-    # # Academic and Research Institutions
-    # "https://www.jpl.nasa.gov/news",  # Jet Propulsion Laboratory
-    # "https://www.seti.org/research",  # SETI Institute Research
-    
-    # # Planetary and Astronomical Research
-    # "https://www.planetary.org/explore/space-topics/",  # The Planetary Society
-    # "https://www.space.com/science",  # Space.com Scientific Research
 ]
 # Sidebar for configuration
 with st.sidebar:

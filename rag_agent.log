@@ -3930,3 +3930,247 @@
 2025-03-08 12:32:51,547 - rag_agent - INFO - Usefulness check: Useful
 2025-03-08 12:32:51,547 - rag_agent - INFO - Grading took 0.17 seconds
 2025-03-08 12:32:51,553 - rag_agent - INFO - RAG agent completed in 1.08 seconds
+2025-03-08 18:02:26,326 - rag_agent - INFO - Initializing RAG agent
+2025-03-08 18:02:26,328 - rag_agent - INFO - Configuration validated: using llama3-70b-8192 model
+2025-03-08 18:02:26,329 - rag_agent - INFO - Initializing embedding model: BAAI/bge-base-en-v1.5
+2025-03-08 18:02:34,015 - rag_agent - INFO - Initializing LLM: llama3-70b-8192
+2025-03-08 18:02:35,983 - rag_agent - INFO - All resources initialized successfully
+2025-03-08 18:02:35,984 - rag_agent - INFO - Loading documents from 1 URLs
+2025-03-08 18:02:37,753 - rag_agent - INFO - Loaded 11 documents
+2025-03-08 18:02:37,754 - rag_agent - INFO - Splitting documents into chunks
+2025-03-08 18:02:39,008 - rag_agent - INFO - Generated 53 document chunks
+2025-03-08 18:02:39,009 - rag_agent - INFO - Creating vectorstore
+2025-03-08 18:02:40,898 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-03-08 18:06:20,664 - rag_agent - INFO - Vectorstore and retriever created successfully
+2025-03-08 18:06:20,699 - rag_agent - INFO - Initializing chains
+2025-03-08 18:06:20,825 - rag_agent - INFO - All chains initialized successfully
+2025-03-08 18:06:20,829 - rag_agent - INFO - Building workflow graph
+2025-03-08 18:06:21,072 - rag_agent - INFO - Workflow graph built successfully
+2025-03-08 18:06:21,073 - rag_agent - INFO - RAG agent initialized successfully
+2025-03-08 18:07:05,755 - rag_agent - INFO - Running RAG agent with question: what are all the challenges of processing bio feed in hydroprocessing unit ? Explain in detail for session: default
+2025-03-08 18:07:05,794 - rag_agent - INFO - Retrieving documents from vectorstore
+2025-03-08 18:07:07,742 - rag_agent - INFO - Retrieved 2 documents in 1.95 seconds
+2025-03-08 18:07:07,752 - rag_agent - INFO - Grading documents for relevance
+2025-03-08 18:07:08,609 - httpx - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-08 18:07:08,972 - httpx - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-08 18:07:08,977 - rag_agent - INFO - Document relevance: 2/2 docs relevant (1.00)
+2025-03-08 18:07:08,981 - rag_agent - INFO - Generating answer
+2025-03-08 18:07:10,577 - httpx - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-08 18:07:10,580 - rag_agent - INFO - Answer generation took 1.60 seconds
+2025-03-08 18:07:10,582 - rag_agent - INFO - Grading generation
+2025-03-08 18:07:10,963 - httpx - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-08 18:07:10,969 - rag_agent - INFO - Hallucination check: Grounded
+2025-03-08 18:07:10,970 - rag_agent - INFO - Usefulness check: Useful
+2025-03-08 18:07:10,971 - rag_agent - INFO - Grading took 0.39 seconds
+2025-03-08 18:07:11,029 - rag_agent - INFO - RAG agent completed in 5.27 seconds
+2025-03-08 19:20:42,544 - rag_agent - INFO - Initializing RAG agent
+2025-03-08 19:20:42,547 - rag_agent - INFO - Configuration validated: using llama3-70b-8192 model
+2025-03-08 19:20:42,548 - rag_agent - INFO - Initializing embedding model: BAAI/bge-base-en-v1.5
+2025-03-08 19:20:48,468 - rag_agent - INFO - Initializing LLM: llama3-70b-8192
+2025-03-08 19:20:50,516 - rag_agent - INFO - All resources initialized successfully
+2025-03-08 19:20:50,517 - rag_agent - INFO - Loading documents from 1 URLs
+2025-03-08 19:20:52,284 - rag_agent - INFO - Loaded 11 documents
+2025-03-08 19:20:52,285 - rag_agent - INFO - Splitting documents into chunks
+2025-03-08 19:20:53,378 - rag_agent - INFO - Generated 53 document chunks
+2025-03-08 19:20:53,384 - rag_agent - INFO - Creating vectorstore
+2025-03-08 19:20:55,517 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-03-08 19:23:33,812 - rag_agent - INFO - Vectorstore and retriever created successfully
+2025-03-08 19:23:33,824 - rag_agent - INFO - Initializing chains
+2025-03-08 19:23:33,849 - rag_agent - INFO - All chains initialized successfully
+2025-03-08 19:23:33,855 - rag_agent - INFO - Building workflow graph
+2025-03-08 19:23:33,979 - rag_agent - INFO - Workflow graph built successfully
+2025-03-08 19:23:33,984 - rag_agent - INFO - RAG agent initialized successfully
+2025-03-08 20:08:13,788 - rag_agent - INFO - Initializing RAG agent
+2025-03-08 20:08:13,790 - rag_agent - INFO - Configuration validated: using llama3-70b-8192 model
+2025-03-08 20:08:13,793 - rag_agent - INFO - Initializing embedding model: BAAI/bge-base-en-v1.5
+2025-03-08 20:08:17,299 - rag_agent - INFO - Initializing LLM: llama3-70b-8192
+2025-03-08 20:08:17,416 - rag_agent - INFO - All resources initialized successfully
+2025-03-08 20:08:17,416 - rag_agent - INFO - Loading documents from 1 URLs
+2025-03-08 20:08:18,363 - rag_agent - INFO - Loaded 11 documents
+2025-03-08 20:08:18,364 - rag_agent - INFO - Splitting documents into chunks
+2025-03-08 20:08:19,937 - rag_agent - INFO - Generated 53 document chunks
+2025-03-08 20:08:19,940 - rag_agent - INFO - Creating vectorstore
+2025-03-08 20:08:21,369 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-03-08 20:12:31,088 - rag_agent - INFO - Vectorstore and retriever created successfully
+2025-03-08 20:12:31,116 - rag_agent - INFO - Initializing chains
+2025-03-08 20:12:31,153 - rag_agent - INFO - All chains initialized successfully
+2025-03-08 20:12:31,156 - rag_agent - INFO - Building workflow graph
+2025-03-08 20:12:31,266 - rag_agent - INFO - Workflow graph built successfully
+2025-03-08 20:12:31,267 - rag_agent - INFO - RAG agent initialized successfully
+2025-03-08 20:12:50,477 - rag_agent - INFO - Running RAG agent with question: tell me about this document for session: default
+2025-03-08 20:12:50,495 - rag_agent - INFO - Retrieving documents from vectorstore
+2025-03-08 20:12:51,879 - rag_agent - INFO - Retrieved 2 documents in 1.38 seconds
+2025-03-08 20:12:51,894 - rag_agent - INFO - Grading documents for relevance
+2025-03-08 20:12:55,936 - rag_agent - INFO - Document relevance: 2/2 docs relevant (1.00)
+2025-03-08 20:12:55,938 - rag_agent - INFO - Generating answer
+2025-03-08 20:13:00,210 - rag_agent - INFO - Answer generation took 4.27 seconds
+2025-03-08 20:13:00,211 - rag_agent - INFO - Grading generation
+2025-03-08 20:13:00,692 - langchain_google_genai.chat_models - WARNING - Retrying langchain_google_genai.chat_models._chat_with_retry.<locals>._chat_with_retry in 2.0 seconds as it raised ResourceExhausted: 429 Resource has been exhausted (e.g. check quota)..
+2025-03-08 20:13:03,129 - rag_agent - ERROR - Error grading generation: 429 Resource has been exhausted (e.g. check quota).
+2025-03-08 20:13:03,131 - rag_agent - INFO - RAG agent completed in 12.65 seconds
+2025-03-08 20:17:11,410 - rag_agent - INFO - Initializing RAG agent
+2025-03-08 20:17:11,410 - rag_agent - INFO - Configuration validated: using llama3-70b-8192 model
+2025-03-08 20:17:11,411 - rag_agent - INFO - Initializing embedding model: BAAI/bge-base-en-v1.5
+2025-03-08 20:17:14,645 - rag_agent - INFO - Initializing LLM: llama3-70b-8192
+2025-03-08 20:17:14,691 - rag_agent - INFO - All resources initialized successfully
+2025-03-08 20:17:14,691 - rag_agent - INFO - Loading documents from 1 URLs
+2025-03-08 20:17:40,757 - rag_agent - INFO - Loaded 454 documents
+2025-03-08 20:17:40,757 - rag_agent - INFO - Splitting documents into chunks
+2025-03-08 20:17:42,651 - rag_agent - INFO - Generated 1031 document chunks
+2025-03-08 20:17:42,654 - rag_agent - INFO - Creating vectorstore
+2025-03-08 20:17:43,322 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-03-08 20:19:17,458 - rag_agent - INFO - Initializing RAG agent
+2025-03-08 20:19:17,460 - rag_agent - INFO - Configuration validated: using llama3-70b-8192 model
+2025-03-08 20:19:17,460 - rag_agent - INFO - Initializing embedding model: BAAI/bge-base-en-v1.5
+2025-03-08 20:19:20,271 - rag_agent - INFO - Initializing LLM: llama3-70b-8192
+2025-03-08 20:19:20,329 - rag_agent - INFO - All resources initialized successfully
+2025-03-08 20:19:20,329 - rag_agent - INFO - Loading documents from 1 URLs
+2025-03-08 20:19:21,342 - rag_agent - INFO - Loaded 11 documents
+2025-03-08 20:19:21,344 - rag_agent - INFO - Splitting documents into chunks
+2025-03-08 20:19:21,882 - rag_agent - INFO - Generated 53 document chunks
+2025-03-08 20:19:21,883 - rag_agent - INFO - Creating vectorstore
+2025-03-08 20:19:22,617 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-03-08 20:22:13,409 - rag_agent - INFO - Vectorstore and retriever created successfully
+2025-03-08 20:22:13,411 - rag_agent - INFO - Initializing chains
+2025-03-08 20:22:13,413 - rag_agent - INFO - All chains initialized successfully
+2025-03-08 20:22:13,414 - rag_agent - INFO - Building workflow graph
+2025-03-08 20:22:13,446 - rag_agent - INFO - Workflow graph built successfully
+2025-03-08 20:22:13,447 - rag_agent - INFO - RAG agent initialized successfully
+2025-03-08 20:22:26,253 - rag_agent - INFO - Running RAG agent with question: tell me about the document for session: default
+2025-03-08 20:22:26,262 - rag_agent - INFO - Retrieving documents from vectorstore
+2025-03-08 20:22:26,618 - rag_agent - INFO - Retrieved 2 documents in 0.35 seconds
+2025-03-08 20:22:26,619 - rag_agent - INFO - Grading documents for relevance
+2025-03-08 20:22:30,457 - rag_agent - INFO - Document relevance: 2/2 docs relevant (1.00)
+2025-03-08 20:22:30,459 - rag_agent - INFO - Generating answer
+2025-03-08 20:22:34,978 - rag_agent - INFO - Answer generation took 4.52 seconds
+2025-03-08 20:22:34,979 - rag_agent - INFO - Grading generation
+2025-03-08 20:22:35,435 - langchain_google_genai.chat_models - WARNING - Retrying langchain_google_genai.chat_models._chat_with_retry.<locals>._chat_with_retry in 2.0 seconds as it raised ResourceExhausted: 429 Resource has been exhausted (e.g. check quota)..
+2025-03-08 20:22:39,099 - rag_agent - ERROR - Error grading generation: 429 Resource has been exhausted (e.g. check quota).
+2025-03-08 20:22:39,101 - rag_agent - INFO - RAG agent completed in 12.85 seconds
+2025-03-08 20:23:08,032 - rag_agent - INFO - Running RAG agent with question: tell me few points about it for session: default
+2025-03-08 20:23:08,037 - rag_agent - INFO - Retrieving documents from vectorstore
+2025-03-08 20:23:08,222 - rag_agent - INFO - Retrieved 2 documents in 0.18 seconds
+2025-03-08 20:23:08,223 - rag_agent - INFO - Grading documents for relevance
+2025-03-08 20:23:09,950 - langchain_google_genai.chat_models - WARNING - Retrying langchain_google_genai.chat_models._chat_with_retry.<locals>._chat_with_retry in 2.0 seconds as it raised ResourceExhausted: 429 Resource has been exhausted (e.g. check quota)..
+2025-03-08 20:23:12,354 - rag_agent - WARNING - Error grading document: 429 Resource has been exhausted (e.g. check quota).
+2025-03-08 20:23:12,355 - rag_agent - INFO - Document relevance: 1/2 docs relevant (0.50)
+2025-03-08 20:23:12,356 - rag_agent - INFO - Generating answer
+2025-03-08 20:23:13,684 - langchain_google_genai.chat_models - WARNING - Retrying langchain_google_genai.chat_models._chat_with_retry.<locals>._chat_with_retry in 2.0 seconds as it raised ResourceExhausted: 429 Resource has been exhausted (e.g. check quota)..
+2025-03-08 20:23:16,142 - rag_agent - ERROR - Error generating answer: 429 Resource has been exhausted (e.g. check quota).
+2025-03-08 20:23:16,144 - rag_agent - INFO - Grading generation
+2025-03-08 20:23:16,548 - langchain_google_genai.chat_models - WARNING - Retrying langchain_google_genai.chat_models._chat_with_retry.<locals>._chat_with_retry in 2.0 seconds as it raised ResourceExhausted: 429 Resource has been exhausted (e.g. check quota)..
+2025-03-08 20:23:18,980 - rag_agent - ERROR - Error grading generation: 429 Resource has been exhausted (e.g. check quota).
+2025-03-08 20:23:18,982 - rag_agent - INFO - RAG agent completed in 10.95 seconds
+2025-03-08 20:26:14,377 - rag_agent - INFO - Initializing RAG agent
+2025-03-08 20:26:14,379 - rag_agent - INFO - Configuration validated: using llama3-70b-8192 model
+2025-03-08 20:26:14,380 - rag_agent - INFO - Initializing embedding model: BAAI/bge-base-en-v1.5
+2025-03-08 20:26:17,390 - rag_agent - INFO - Initializing LLM: llama3-70b-8192
+2025-03-08 20:26:17,421 - rag_agent - INFO - All resources initialized successfully
+2025-03-08 20:26:17,422 - rag_agent - INFO - Loading documents from 1 URLs
+2025-03-08 20:26:18,570 - rag_agent - INFO - Loaded 11 documents
+2025-03-08 20:26:18,570 - rag_agent - INFO - Splitting documents into chunks
+2025-03-08 20:26:19,029 - rag_agent - INFO - Generated 53 document chunks
+2025-03-08 20:26:19,030 - rag_agent - INFO - Creating vectorstore
+2025-03-08 20:26:19,797 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-03-08 20:29:20,195 - rag_agent - INFO - Vectorstore and retriever created successfully
+2025-03-08 20:29:20,200 - rag_agent - INFO - Initializing chains
+2025-03-08 20:29:20,209 - rag_agent - INFO - All chains initialized successfully
+2025-03-08 20:29:20,210 - rag_agent - INFO - Building workflow graph
+2025-03-08 20:29:20,256 - rag_agent - INFO - Workflow graph built successfully
+2025-03-08 20:29:20,257 - rag_agent - INFO - RAG agent initialized successfully
+2025-03-08 20:29:46,613 - rag_agent - INFO - Running RAG agent with question: tell me about the document for session: default
+2025-03-08 20:29:46,635 - rag_agent - INFO - Retrieving documents from vectorstore
+2025-03-08 20:29:47,168 - rag_agent - INFO - Retrieved 3 documents in 0.53 seconds
+2025-03-08 20:29:47,169 - rag_agent - INFO - Grading documents for relevance
+2025-03-08 20:29:51,409 - rag_agent - INFO - Document relevance: 3/3 docs relevant (1.00)
+2025-03-08 20:29:51,410 - rag_agent - INFO - Generating answer
+2025-03-08 20:29:52,331 - rag_agent - INFO - Answer generation took 0.92 seconds
+2025-03-08 20:29:52,333 - rag_agent - INFO - Grading generation
+2025-03-08 20:29:53,372 - rag_agent - INFO - Hallucination check: Grounded
+2025-03-08 20:29:53,373 - rag_agent - INFO - Usefulness check: Useful
+2025-03-08 20:29:53,373 - rag_agent - INFO - Grading took 1.04 seconds
+2025-03-08 20:29:53,375 - rag_agent - INFO - RAG agent completed in 6.76 seconds
+2025-03-08 20:30:08,073 - rag_agent - INFO - Running RAG agent with question: tell me 50 lines about this for session: default
+2025-03-08 20:30:08,083 - rag_agent - INFO - Retrieving documents from vectorstore
+2025-03-08 20:30:08,283 - rag_agent - INFO - Retrieved 3 documents in 0.20 seconds
+2025-03-08 20:30:08,284 - rag_agent - INFO - Grading documents for relevance
+2025-03-08 20:30:10,818 - rag_agent - INFO - Document relevance: 3/3 docs relevant (1.00)
+2025-03-08 20:30:10,820 - rag_agent - INFO - Generating answer
+2025-03-08 20:30:12,042 - rag_agent - INFO - Answer generation took 1.22 seconds
+2025-03-08 20:30:12,043 - rag_agent - INFO - Grading generation
+2025-03-08 20:30:12,729 - rag_agent - INFO - Hallucination check: Not grounded
+2025-03-08 20:30:12,729 - rag_agent - WARNING - Generation is not grounded in documents
+2025-03-08 20:30:12,739 - rag_agent - INFO - RAG agent completed in 4.66 seconds
+2025-03-08 20:30:27,293 - rag_agent - INFO - Running RAG agent with question: tell me atleast 5 lines for session: default
+2025-03-08 20:30:27,298 - rag_agent - INFO - Retrieving documents from vectorstore
+2025-03-08 20:30:27,477 - rag_agent - INFO - Retrieved 3 documents in 0.18 seconds
+2025-03-08 20:30:27,479 - rag_agent - INFO - Grading documents for relevance
+2025-03-08 20:30:29,367 - rag_agent - INFO - Document relevance: 3/3 docs relevant (1.00)
+2025-03-08 20:30:29,368 - rag_agent - INFO - Generating answer
+2025-03-08 20:30:30,665 - rag_agent - INFO - Answer generation took 1.30 seconds
+2025-03-08 20:30:30,666 - rag_agent - INFO - Grading generation
+2025-03-08 20:30:31,336 - rag_agent - INFO - Hallucination check: Grounded
+2025-03-08 20:30:31,337 - rag_agent - INFO - Usefulness check: Useful
+2025-03-08 20:30:31,338 - rag_agent - INFO - Grading took 0.67 seconds
+2025-03-08 20:30:31,340 - rag_agent - INFO - RAG agent completed in 4.05 seconds
+2025-03-08 20:31:10,719 - rag_agent - INFO - Initializing RAG agent
+2025-03-08 20:31:10,721 - rag_agent - INFO - Configuration validated: using llama3-70b-8192 model
+2025-03-08 20:31:10,722 - rag_agent - INFO - Initializing embedding model: BAAI/bge-base-en-v1.5
+2025-03-08 20:31:15,612 - rag_agent - INFO - Initializing LLM: llama3-70b-8192
+2025-03-08 20:31:15,676 - rag_agent - INFO - All resources initialized successfully
+2025-03-08 20:31:15,677 - rag_agent - INFO - Loading documents from 1 URLs
+2025-03-08 20:31:16,943 - rag_agent - INFO - Loaded 11 documents
+2025-03-08 20:31:16,944 - rag_agent - INFO - Splitting documents into chunks
+2025-03-08 20:31:17,523 - rag_agent - INFO - Generated 53 document chunks
+2025-03-08 20:31:17,524 - rag_agent - INFO - Creating vectorstore
+2025-03-08 20:31:19,016 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-03-08 20:34:43,659 - rag_agent - INFO - Vectorstore and retriever created successfully
+2025-03-08 20:34:43,664 - rag_agent - INFO - Initializing chains
+2025-03-08 20:34:43,672 - rag_agent - INFO - All chains initialized successfully
+2025-03-08 20:34:43,673 - rag_agent - INFO - Building workflow graph
+2025-03-08 20:34:43,717 - rag_agent - INFO - Workflow graph built successfully
+2025-03-08 20:34:43,717 - rag_agent - INFO - RAG agent initialized successfully
+2025-03-08 20:34:57,680 - rag_agent - INFO - Running RAG agent with question: tell me about the document for session: default
+2025-03-08 20:34:57,699 - rag_agent - INFO - Retrieving documents from vectorstore
+2025-03-08 20:34:58,369 - rag_agent - INFO - Retrieved 10 documents in 0.65 seconds
+2025-03-08 20:34:58,373 - rag_agent - INFO - Grading documents for relevance
+2025-03-08 20:35:09,962 - rag_agent - INFO - Document relevance: 10/10 docs relevant (1.00)
+2025-03-08 20:35:09,964 - rag_agent - INFO - Generating answer
+2025-03-08 20:35:11,404 - rag_agent - INFO - Answer generation took 1.44 seconds
+2025-03-08 20:35:11,405 - rag_agent - INFO - Grading generation
+2025-03-08 20:35:12,494 - rag_agent - INFO - Hallucination check: Grounded
+2025-03-08 20:35:12,494 - rag_agent - INFO - Usefulness check: Useful
+2025-03-08 20:35:12,496 - rag_agent - INFO - Grading took 1.09 seconds
+2025-03-08 20:35:12,500 - rag_agent - INFO - RAG agent completed in 14.82 seconds
+2025-03-08 20:35:46,391 - rag_agent - INFO - Running RAG agent with question: tell me about the intraduction for session: default
+2025-03-08 20:35:46,412 - rag_agent - INFO - Retrieving documents from vectorstore
+2025-03-08 20:35:46,612 - rag_agent - INFO - Retrieved 10 documents in 0.20 seconds
+2025-03-08 20:35:46,613 - rag_agent - INFO - Grading documents for relevance
+2025-03-08 20:35:53,891 - rag_agent - INFO - Document relevance: 10/10 docs relevant (1.00)
+2025-03-08 20:35:53,892 - rag_agent - INFO - Generating answer
+2025-03-08 20:35:54,751 - rag_agent - INFO - Answer generation took 0.86 seconds
+2025-03-08 20:35:54,752 - rag_agent - INFO - Grading generation
+2025-03-08 20:35:55,764 - rag_agent - INFO - Hallucination check: Not grounded
+2025-03-08 20:35:55,764 - rag_agent - WARNING - Generation is not grounded in documents
+2025-03-08 20:35:55,771 - rag_agent - INFO - RAG agent completed in 9.38 seconds
+2025-03-08 20:36:30,959 - rag_agent - INFO - Running RAG agent with question: explain me about Feedstocks and key characteristics that will impact coprocessing for session: default
+2025-03-08 20:36:30,974 - rag_agent - INFO - Retrieving documents from vectorstore
+2025-03-08 20:36:31,207 - rag_agent - INFO - Retrieved 10 documents in 0.23 seconds
+2025-03-08 20:36:31,208 - rag_agent - INFO - Grading documents for relevance
+2025-03-08 20:36:35,912 - langchain_google_genai.chat_models - WARNING - Retrying langchain_google_genai.chat_models._chat_with_retry.<locals>._chat_with_retry in 2.0 seconds as it raised ResourceExhausted: 429 Resource has been exhausted (e.g. check quota)..
+2025-03-08 20:36:38,291 - rag_agent - WARNING - Error grading document: 429 Resource has been exhausted (e.g. check quota).
+2025-03-08 20:36:38,693 - langchain_google_genai.chat_models - WARNING - Retrying langchain_google_genai.chat_models._chat_with_retry.<locals>._chat_with_retry in 2.0 seconds as it raised ResourceExhausted: 429 Resource has been exhausted (e.g. check quota)..
+2025-03-08 20:36:41,067 - rag_agent - WARNING - Error grading document: 429 Resource has been exhausted (e.g. check quota).
+2025-03-08 20:36:41,473 - langchain_google_genai.chat_models - WARNING - Retrying langchain_google_genai.chat_models._chat_with_retry.<locals>._chat_with_retry in 2.0 seconds as it raised ResourceExhausted: 429 Resource has been exhausted (e.g. check quota)..
+2025-03-08 20:36:43,889 - rag_agent - WARNING - Error grading document: 429 Resource has been exhausted (e.g. check quota).
+2025-03-08 20:36:44,286 - langchain_google_genai.chat_models - WARNING - Retrying langchain_google_genai.chat_models._chat_with_retry.<locals>._chat_with_retry in 2.0 seconds as it raised ResourceExhausted: 429 Resource has been exhausted (e.g. check quota)..
+2025-03-08 20:36:46,687 - rag_agent - WARNING - Error grading document: 429 Resource has been exhausted (e.g. check quota).
+2025-03-08 20:36:46,688 - rag_agent - INFO - Document relevance: 6/10 docs relevant (0.60)
+2025-03-08 20:36:46,689 - rag_agent - INFO - Generating answer
+2025-03-08 20:36:47,157 - langchain_google_genai.chat_models - WARNING - Retrying langchain_google_genai.chat_models._chat_with_retry.<locals>._chat_with_retry in 2.0 seconds as it raised ResourceExhausted: 429 Resource has been exhausted (e.g. check quota)..
+2025-03-08 20:36:50,801 - rag_agent - INFO - Answer generation took 4.11 seconds
+2025-03-08 20:36:50,802 - rag_agent - INFO - Grading generation
+2025-03-08 20:36:51,687 - rag_agent - INFO - Hallucination check: Grounded
+2025-03-08 20:36:51,688 - rag_agent - INFO - Usefulness check: Useful
+2025-03-08 20:36:51,688 - rag_agent - INFO - Grading took 0.89 seconds
+2025-03-08 20:36:51,691 - rag_agent - INFO - RAG agent completed in 20.73 seconds

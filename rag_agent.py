@@ -17,6 +17,8 @@ from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 from langchain_groq import ChatGroq
 from langgraph.graph import END, StateGraph
 
+from langchain_google_genai import ChatGoogleGenerativeAI
+
 
 # =============================================================================
 # memory saver
@@ -45,18 +47,21 @@ class Config:
     def __init__(self, config_dict: Optional[Dict[str, Any]] = None):
         """Initialize with optional config dictionary."""
         # Default configuration
+        self.gemini_model = "gemini-2.0-flash-001"
+
         self.groq_model = "llama3-70b-8192"
-        self.temperature = 0.2
+        self.temperature = 0
         self.embed_model_name = "BAAI/bge-base-en-v1.5"
         self.chunk_size = 512
         self.chunk_overlap = 0
-        self.retriever_k = 2
+        self.retriever_k = 10
         self.embedding_max_seq_length = 128
         self.collection_name = "local-rag"
 
         # set environment variables
         # set_env_variables()
         load_dotenv()
+        
         # Load environment variables or config dict
         self.load_env_variables()
         if config_dict:
@@ -66,7 +71,9 @@ class Config:
         """Load configuration from environment variables."""
         # API keys
         self.groq_api_key = os.getenv("GROQ_API_KEY")
-        
+
+        self.google_api_key = os.getenv("GOOGLE_API_KEY")
+
         # Override defaults with environment variables if they exist
         if os.environ.get("GROQ_MODEL"):
             self.groq_model = os.environ.get("GROQ_MODEL")
@@ -121,7 +128,8 @@ class Resources:
         try:
             # Set environment variables
             os.environ["GROQ_API_KEY"] = self.config.groq_api_key
-            
+            os.environ["GOOGLE_API_KEY"] = self.config.google_api_key
+
             # Initialize embedding model
             logger.info(f"Initializing embedding model: {self.config.embed_model_name}")
             self.embed_model = FastEmbedEmbeddings(
@@ -131,11 +139,12 @@ class Resources:
 
             # Initialize LLM
             logger.info(f"Initializing LLM: {self.config.groq_model}")
-            self.llm = ChatGroq(
+            self.llm = ChatGoogleGenerativeAI(
                 temperature=self.config.temperature,
-                model_name=self.config.groq_model,
-                api_key=self.config.groq_api_key      
+                model=self.config.gemini_model,
+                google_api_key=self.config.google_api_key,
             )
+
             
             logger.info("All resources initialized successfully")
             return True

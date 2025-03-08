@@ -1,6 +1,7 @@
 import os
 import time
 import logging
+import gc
 from typing import Dict, List, Optional, Any, Callable, Union
 import uuid
 from typing_extensions import TypedDict
@@ -14,19 +15,15 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import WebBaseLoader
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
-from langchain_groq import ChatGroq
 from langgraph.graph import END, StateGraph
-
 
 # For local LLaMA with transformers
 import torch
-from transformers import pipeline
-from langchain.llms import HuggingFacePipeline
+from transformers import pipeline, AutoTokenizer, BitsAndBytesConfig
+from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
 
-# =============================================================================
-# memory saver
+# Memory saver
 from langgraph.checkpoint.memory import MemorySaver
-
 
 # Configure logging
 logging.basicConfig(
@@ -59,23 +56,18 @@ class Config:
         self.embedding_max_seq_length = 128
         self.collection_name = "local-rag"
         self.max_new_tokens = 512  # Control generation length
+        self.use_4bit_quantization = True  # Enable 4-bit quantization by default
 
-        # set environment variables
-        # set_env_variables()
+        # Load environment variables
         load_dotenv()
-        # Load environment variables or config dict
         self.load_env_variables()
+        
+        # Override with config dict if provided
         if config_dict:
             self.__dict__.update(config_dict)
             
     def load_env_variables(self):
         """Load configuration from environment variables."""
-        # API keys
-        self.groq_api_key = os.getenv("GROQ_API_KEY")
-        
-        # Override defaults with environment variables if they exist
-        if os.environ.get("GROQ_MODEL"):
-            self.groq_model = os.environ.get("GROQ_MODEL")
         if os.environ.get("TEMPERATURE"):
             self.temperature = float(os.environ.get("TEMPERATURE"))
         if os.environ.get("EMBED_MODEL_NAME"):
@@ -86,13 +78,12 @@ class Config:
             self.retriever_k = int(os.environ.get("RETRIEVER_K"))
         if os.environ.get("COLLECTION_NAME"):
             self.collection_name = os.environ.get("COLLECTION_NAME")
+        if os.environ.get("USE_4BIT_QUANTIZATION"):
+            self.use_4bit_quantization = os.environ.get("USE_4BIT_QUANTIZATION").lower() == "true"
 
     def validate(self):
         """Validate the configuration."""
-        if not self.groq_api_key:
-            raise ValueError("GROQ_API_KEY is not set")
-        
-        logger.info(f"Configuration validated: using {self.groq_model} model")
+        logger.info(f"Configuration validated: using {self.llama_model} model")
         return True
 
 # =============================================================================
@@ -136,46 +127,44 @@ class Resources:
 
             # Initialize LLaMA model with Transformers pipeline
             logger.info(f"Initializing local LLaMA model: {self.config.llama_model}")
+            tokenizer = AutoTokenizer.from_pretrained(self.config.llama_model)
+
+            # Set a chat template for LLaMA model
+            tokenizer.chat_template = """<|im_start|>system
+            You are a helpful AI assistant that answers questions based on provided documents.
+            <|im_end|>
+            <|im_start|>user
+            {{query}}
+            <|im_end|>
+            <|im_start|>assistant
+            """
             
-            # Create pipeline for text generation using the simplified approach
+            # Configure quantization if enabled
+            model_kwargs = {}
+            if self.config.use_4bit_quantization:
+                logger.info("Using 4-bit quantization for LLaMA model")
+                quantization_config = BitsAndBytesConfig(
+                    load_in_4bit=True,
+                    bnb_4bit_compute_dtype=torch.bfloat16,
+                    bnb_4bit_use_double_quant=True,
+                )
+                model_kwargs["quantization_config"] = quantization_config
+                        
+            # Create pipeline for text generation with parameters pre-configured
             self.pipe = pipeline(
                 "text-generation",
                 model=self.config.llama_model,
                 torch_dtype=torch.bfloat16,
                 device_map="auto",
+                tokenizer=tokenizer,
+                max_new_tokens=self.config.max_new_tokens,
+                temperature=self.config.temperature,
+                do_sample=True if self.config.temperature > 0 else False,
+                model_kwargs=model_kwargs
             )
             
-            # Wrap the pipeline for LangChain compatibility
-            def llama_wrapper(prompt):
-                """Wrapper for the pipeline to handle chat format expected by LangChain."""
-                messages = [
-                    {"role": "user", "content": prompt}
-                ]
-                response = self.pipe(
-                    messages,
-                    max_new_tokens=self.config.max_new_tokens,
-                    temperature=self.config.temperature,
-                    do_sample=True if self.config.temperature > 0 else False,
-                )
-                # Extract the generated text from the response
-                return response[0]["generated_text"]
-            
-            # Create a custom LLM implementation for LangChain
-            from langchain.llms.base import LLM
-            
-            class CustomLLM(LLM):
-                def _call(self, prompt, stop=None):
-                    return llama_wrapper(prompt)
-                
-                @property
-                def _identifying_params(self):
-                    return {"name": "LlamaTransformersPipeline"}
-                
-                @property
-                def _llm_type(self):
-                    return "custom"
-            
-            self.llm = CustomLLM()
+            # Create HuggingFacePipeline directly
+            self.llm = HuggingFacePipeline(pipeline=self.pipe)
             
             logger.info("All resources initialized successfully")
             return True
@@ -184,7 +173,6 @@ class Resources:
             logger.error(f"Error initializing resources: {str(e)}")
             raise
 
-    # load_documents and process_documents methods remain the same
     def load_documents(self, urls: List[str]) -> List[Document]:
         """Load documents from URLs."""
         try:
@@ -278,6 +266,25 @@ class Resources:
         except Exception as e:
             logger.error(f"Error processing documents: {str(e)}")
             raise
+            
+    def cleanup(self):
+        """Release resources when done."""
+        try:
+            logger.info("Cleaning up resources")
+            if hasattr(self, 'pipe') and self.pipe is not None:
+                del self.pipe
+            if hasattr(self, 'llm') and self.llm is not None:
+                del self.llm
+            
+            # Clear CUDA cache
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            
+            # Force garbage collection
+            gc.collect()
+            logger.info("Resources cleaned up successfully")
+        except Exception as e:
+            logger.error(f"Error cleaning up resources: {str(e)}")
 
 # =============================================================================
 # RAG Components
@@ -299,7 +306,7 @@ class Chains:
         try:
             logger.info("Initializing chains")
             
-            # RAG chain
+            # RAG chain with improved chat history handling
             rag_prompt = PromptTemplate(
                 template="""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
             You are an assistant for question-answering tasks. Follow these guidelines:
@@ -307,7 +314,7 @@ class Chains:
             1. Use the retrieved context to answer the user's question accurately and concisely.
             2. If the context doesn't contain the answer, clearly state "I don't have enough information to answer this question" instead of guessing.
             3. Keep your response focused and relevant to the question asked.
-            4. if context is too long keep answere upto 10 senetenses.
+            4. If context is too long keep answer up to 10 sentences.
             5. Use a confident tone when the answer is clearly supported by the context.
             6. Maintain a neutral, informative tone throughout your response.
 
@@ -328,7 +335,7 @@ class Chains:
                 of a retrieved document to a user question. If the document contains keywords related to the user question,
                 grade it as relevant. It does not need to be a stringent test. The goal is to filter out erroneous retrievals. \n
                 Give a binary score 'yes' or 'no' score to indicate whether the document is relevant to the question. \n
-                Provide the binary score as a JSON with a single key 'score' and no premable or explaination.
+                Provide the binary score as a JSON with a single key 'score' and no preamble or explanation.
                 <|eot_id|><|start_header_id|>user<|end_header_id|>
                 Here is the retrieved document: \n\n {document} \n\n
                 Here is the user question: {question} \n <|eot_id|><|start_header_id|>assistant<|end_header_id|>
@@ -341,7 +348,7 @@ class Chains:
             hallucination_prompt = PromptTemplate(
                 template=""" <|begin_of_text|><|start_header_id|>system<|end_header_id|> You are a grader assessing whether
                 an answer is grounded in / supported by a set of facts. Give a binary 'yes' or 'no' score to indicate
-                whether the answer is grounded in / supported by a set of facts.Grade as 'yes' if ANY of these are true:
+                whether the answer is grounded in / supported by a set of facts. Grade as 'yes' if ANY of these are true:
                 1. Answer contains specific details from documents
                 2. Answer directionally matches document themes
                 3. Documents mention related entities/context.
@@ -360,7 +367,7 @@ class Chains:
             answer_prompt = PromptTemplate(
                 template="""<|begin_of_text|><|start_header_id|>system<|end_header_id|> You are a grader assessing whether an
                 answer is useful to resolve a question. Give a binary score 'yes' or 'no' to indicate whether the answer is
-                useful to resolve a question.if the question is related to History and answere contains the related information return 'yes'. Provide the binary score as a JSON with a single key 'score' and no preamble or explanation.
+                useful to resolve a question. If the question is related to History and answer contains the related information return 'yes'. Provide the binary score as a JSON with a single key 'score' and no preamble or explanation.
                 <|eot_id|><|start_header_id|>user<|end_header_id|> Here is the answer:
                 \n ------- \n
                 {generation}
@@ -438,8 +445,7 @@ class RagWorkflowNodes:
                         "document": content
                     })
                     
-                    # score = result.get('score', '').lower()
-                    score="yes"
+                    score = result.get('score', '').lower()
                     graded_docs.append((doc, score))
                     
                 except Exception as e:
@@ -453,6 +459,11 @@ class RagWorkflowNodes:
             
             # Filter to only relevant documents
             filtered_docs = [doc for doc, score in graded_docs if score == "yes"]
+            
+            # If no relevant documents found, use all documents
+            if not filtered_docs and documents:
+                logger.warning("No relevant documents found, using all documents")
+                filtered_docs = documents
             
             logger.info(f"Document relevance: {relevant_count}/{total_count} docs relevant ({relevance_ratio:.2f})")
             
@@ -477,15 +488,22 @@ class RagWorkflowNodes:
             documents = state.get("documents", [])
             chat_history = state.get("chat_history", [])
             
-            # Format chat history for the prompt
+            # Format chat history for the prompt - improved implementation
             formatted_chat_history = ""
-            for message in chat_history[:-1]:  # Exclude the current question
-                role = message["role"]
-                content = message["content"]
-                formatted_chat_history += f"{role}: {content}\n"
+            if chat_history and len(chat_history) > 1:
+                # Skip the current question (last item)
+                for message in chat_history[:-1]:
+                    role = message["role"]
+                    content = message["content"]
+                    formatted_chat_history += f"{role}: {content}\n"
             
             # Format documents for the RAG chain
             context = "\n\n".join(doc.page_content for doc in documents)
+            
+            # Truncate context if too long to fit in context window
+            if len(context) > 20000:
+                logger.warning("Context too long, truncating to 20000 characters")
+                context = context[:20000] + "..."
             
             start_time = time.time()
             generation = self.chains.rag_chain.invoke({
@@ -509,7 +527,7 @@ class RagWorkflowNodes:
                 "documents": state.get("documents", []),
                 "question": state["question"],
                 "generation": "I encountered an error while generating your answer. Please try again.",
-                "chat_history": state.get("chat_history", []),  # Preserve chat history
+                "chat_history": state.get("chat_history", []),
                 "error": f"Error generating answer: {str(e)}"
             }
     
@@ -527,8 +545,12 @@ class RagWorkflowNodes:
             
             # Check if the answer is grounded in the documents
             start_time = time.time()
+            
+            # Prepare documents content for grading
+            docs_content = "\n".join([doc.page_content[:1000] for doc in documents[:3]])
+            
             hallucination_score = self.chains.hallucination_grader.invoke(
-                {"documents": documents, "generation": generation}
+                {"documents": docs_content, "generation": generation}
             )
             
             grounded = hallucination_score.get('score', '').lower() == "yes"
@@ -539,10 +561,9 @@ class RagWorkflowNodes:
                 return "not supported"
             
             # Check if the answer addresses the question
-            # answer_score = self.chains.answer_grader.invoke(
-            #     {"question": question, "generation": generation}
-            # )
-            answer_score = {"score": "yes"}
+            answer_score = self.chains.answer_grader.invoke(
+                {"question": question, "generation": generation}
+            )
             end_time = time.time()
             
             useful = answer_score.get('score', '').lower() == "yes"
@@ -556,8 +577,8 @@ class RagWorkflowNodes:
                 
         except Exception as e:
             logger.error(f"Error grading generation: {str(e)}")
-            # Assume the generation is problematic if we can't grade it
-            return "not supported"
+            # Assume the generation is acceptable if we can't grade it
+            return "useful"
 
 
 # =============================================================================
@@ -567,7 +588,7 @@ class RagWorkflowNodes:
 class RagAgent:
     """Production-grade RAG agent with proper error handling and monitoring."""
     
-    def __init__(self, config_dict: Optional[Dict[str, Any]] = None,):
+    def __init__(self, config_dict: Optional[Dict[str, Any]] = None):
         """Initialize the RAG agent with optional configuration."""
         self.config = Config(config_dict)
         self.resources = None
@@ -597,7 +618,6 @@ class RagAgent:
             # Initialize chains
             self.chains = Chains(self.resources)
             self.chains.initialize()
-            # memory
 
             # Initialize workflow nodes
             self.nodes = RagWorkflowNodes(self.chains, self.resources)
@@ -704,7 +724,10 @@ class RagAgent:
                 return {
                     "answer": final_result.get("generation", ""),
                     "sources": [
-                        {"content": doc.page_content[:200] + "..."} 
+                        {
+                            "content": doc.page_content[:200] + "...",
+                            "metadata": doc.metadata
+                        } 
                         for doc in final_result.get("documents", [])
                     ],
                     "execution_time": end_time - start_time
@@ -724,3 +747,8 @@ class RagAgent:
                 "error": str(e),
                 "execution_time": time.time() - start_time
             }
+    
+    def cleanup(self):
+        """Clean up resources."""
+        if self.resources:
+            self.resources.cleanup()

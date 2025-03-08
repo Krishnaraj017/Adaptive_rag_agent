@@ -170,8 +170,20 @@ class Resources:
             docs_list = []
             
             for url in urls:
-                if "drive.google.com" in url and "export=download" in url:
-                    # Extract file ID from Google Drive URL
+                print(url)
+                if url.startswith("file://"):
+                    # Handle local file paths
+                    file_path = url[len("file://"):]  # Remove the 'file://' prefix
+                    if file_path.endswith('.pdf'):
+                        # Use PyPDFLoader for local PDF files
+                        from langchain_community.document_loaders import PyPDFLoader
+                        pdf_loader = PyPDFLoader(file_path)
+                        pdf_docs = pdf_loader.load()
+                        docs_list.extend(pdf_docs)
+                    else:
+                        logger.error(f"Unsupported file type for local file: {file_path}")
+                elif "drive.google.com" in url and "export=download" in url:
+                    # Handle Google Drive URLs
                     file_id = None
                     if "id=" in url:
                         file_id = url.split("id=")[1].split("&")[0]
@@ -203,6 +215,7 @@ class Resources:
                         logger.error(f"Could not extract file ID from Google Drive URL: {url}")
                 else:
                     # Use WebBaseLoader for regular web pages
+                    from langchain_community.document_loaders import WebBaseLoader
                     web_docs = WebBaseLoader(url).load()
                     docs_list.extend(web_docs)
                     

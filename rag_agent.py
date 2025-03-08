@@ -14,13 +14,9 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import WebBaseLoader
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
-from langchain_community.utilities.tavily_search import TavilySearchAPIWrapper
-from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_groq import ChatGroq
 from langgraph.graph import END, StateGraph
 
-# set env using a function
-from set_env import set_env_variables
 
 # =============================================================================
 # memory saver
@@ -56,12 +52,11 @@ class Config:
         self.chunk_overlap = 0
         self.retriever_k = 2
         self.embedding_max_seq_length = 128
-        self.web_search_k = 3
         self.collection_name = "local-rag"
 
         # set environment variables
-        set_env_variables()
-
+        # set_env_variables()
+        load_dotenv()
         # Load environment variables or config dict
         self.load_env_variables()
         if config_dict:
@@ -71,7 +66,6 @@ class Config:
         """Load configuration from environment variables."""
         # API keys
         self.groq_api_key = os.getenv("GROQ_API_KEY")
-        self.tavily_api_key = os.getenv("TAVILY_API_KEY")
         
         # Override defaults with environment variables if they exist
         if os.environ.get("GROQ_MODEL"):
@@ -91,8 +85,6 @@ class Config:
         """Validate the configuration."""
         if not self.groq_api_key:
             raise ValueError("GROQ_API_KEY is not set")
-        if not self.tavily_api_key:
-            raise ValueError("TAVILY_API_KEY is not set")
         
         logger.info(f"Configuration validated: using {self.groq_model} model")
         return True
@@ -105,7 +97,6 @@ class GraphState(TypedDict):
     """Type definition for the state maintained by the RAG workflow."""
     question: str
     generation: Optional[str]
-    web_search: Optional[str]
     documents: Optional[List[Document]]
     error: Optional[str]
     chat_history: Optional[List[Dict[str, str]]]
@@ -124,15 +115,12 @@ class Resources:
         self.embed_model = None
         self.vectorstore = None
         self.retriever = None
-        self.web_search_tool = None
-        self.tavily_search_api_wrapper = None
     
     def initialize(self):
         """Initialize all resources."""
         try:
             # Set environment variables
             os.environ["GROQ_API_KEY"] = self.config.groq_api_key
-            os.environ["TAVILY_API_KEY"] = self.config.tavily_api_key
             
             # Initialize embedding model
             logger.info(f"Initializing embedding model: {self.config.embed_model_name}")
@@ -147,16 +135,6 @@ class Resources:
                 temperature=self.config.temperature,
                 model_name=self.config.groq_model,
                 api_key=self.config.groq_api_key      
-            )
-            
-            # Initialize Tavily search
-            logger.info("Initializing Tavily search")
-            self.tavily_search_api_wrapper = TavilySearchAPIWrapper(
-                tavily_api_key=self.config.tavily_api_key
-            )
-            self.web_search_tool = TavilySearchResults(
-                api_wrapper=self.tavily_search_api_wrapper,
-                k=self.config.web_search_k
             )
             
             logger.info("All resources initialized successfully")
@@ -270,7 +248,6 @@ class Chains:
     def __init__(self, resources: Resources):
         """Initialize chains with the provided resources."""
         self.resources = resources
-        self.question_router = None
         self.rag_chain = None
         self.retrieval_grader = None
         self.hallucination_grader = None
@@ -280,14 +257,6 @@ class Chains:
         """Initialize all chains."""
         try:
             logger.info("Initializing chains")
-            
-            # Question router chain
-            router_prompt = PromptTemplate(
-                template="""<|begin_of_text|><|start_header_id|>system<|end_header_id|> You are an expert at routing a user question to a vectorstore. try to strictly use the vectorstore. 
-                You do not need to be stringent with the keywords in the question related to these topics.return 'vectorstore' based on the question. Return the a JSON with a single key 'datasource' and no premable or explaination. Question to route: {question} <|eot_id|><|start_header_id|>assistant<|end_header_id|>""",
-                input_variables=["question"],
-            )
-            self.question_router = router_prompt | self.resources.llm | JsonOutputParser()
             
             # RAG chain
             rag_prompt = PromptTemplate(
@@ -380,32 +349,6 @@ class RagWorkflowNodes:
         self.chains = chains
         self.resources = resources
     
-    def route_question(self, state: GraphState) -> str:
-        """Route question to web search or vectorstore."""
-        try:
-            logger.info("Routing question")
-            question = state["question"]
-            
-            start_time = time.time()
-            source = self.chains.question_router.invoke({"question": question})
-            end_time = time.time()
-            logger.info(f"Question routing took {end_time - start_time:.2f} seconds")
-            
-            datasource = source.get('datasource', 'vectorstore')
-            logger.info(f"Routing question to: {datasource}")
-            
-            if datasource == 'vectorstore':
-                return "vectorstore"
-            else:
-                # Default fallback
-                logger.warning(f"Unknown datasource: {datasource}, defaulting to web search")
-                return "websearch"
-                
-        except Exception as e:
-            logger.error(f"Error routing question: {str(e)}")
-            state["error"] = f"Error routing question: {str(e)}"
-            return "websearch"  # Fallback to web search on error
-    
     def retrieve(self, state: GraphState) -> GraphState:
         """Retrieve documents from vectorstore."""
         try:
@@ -428,40 +371,6 @@ class RagWorkflowNodes:
                 "error": f"Error retrieving documents: {str(e)}"
             }
     
-    def web_search(self, state: GraphState) -> GraphState:
-        """Perform web search based on the question."""
-        try:
-            logger.info("Performing web search")
-            question = state["question"]
-            documents = state.get("documents", [])
-            
-            start_time = time.time()
-            search_results = self.resources.web_search_tool.invoke({"query": question})
-            end_time = time.time()
-            logger.info(f"Web search took {end_time - start_time:.2f} seconds, found {len(search_results)} results")
-            
-            web_results = "\n".join([d["content"] for d in search_results])
-            web_document = Document(page_content=web_results)
-            
-            if documents:
-                documents.append(web_document)
-            else:
-                documents = [web_document]
-                
-            return {"documents": documents, "question": question}
-            
-        except Exception as e:
-            logger.error(f"Error in web search: {str(e)}")
-            # If we have existing documents, continue with those
-            if state.get("documents"):
-                return state
-            # Otherwise, return error state
-            return {
-                "documents": [], 
-                "question": state["question"],
-                "error": f"Error in web search: {str(e)}"
-            }
-    
     def grade_documents(self, state: GraphState) -> GraphState:
         """Grade documents for relevance to the question."""
         try:
@@ -470,11 +379,10 @@ class RagWorkflowNodes:
             documents = state.get("documents", [])
             
             if not documents:
-                logger.warning("No documents to grade, proceeding to web search")
+                logger.warning("No documents to grade, proceeding to generate with empty context")
                 return {
                     "documents": documents,
-                    "question": question,
-                    "web_search": "no"
+                    "question": question
                 }
             
             # Grade each document
@@ -502,19 +410,14 @@ class RagWorkflowNodes:
             total_count = len(graded_docs)
             relevance_ratio = relevant_count / total_count if total_count > 0 else 0
             
-            # Determine if web search is needed
-            web_search = "Yes" if relevance_ratio <=0 else "No"
-            
             # Filter to only relevant documents
             filtered_docs = [doc for doc, score in graded_docs if score == "yes"]
             
             logger.info(f"Document relevance: {relevant_count}/{total_count} docs relevant ({relevance_ratio:.2f})")
-            logger.info(f"Web search needed: {web_search}")
             
             return {
                 "documents": filtered_docs,
-                "question": question,
-                "web_search": web_search
+                "question": question
             }
             
         except Exception as e:
@@ -522,21 +425,8 @@ class RagWorkflowNodes:
             return {
                 "documents": state.get("documents", []),
                 "question": state["question"],
-                "web_search": "Yes",  # Default to web search on error
                 "error": f"Error grading documents: {str(e)}"
             }
-    
-    def decide_to_generate(self, state: GraphState) -> str:
-        """Decide whether to generate an answer or perform web search."""
-        # web_search = state.get("web_search", "No")
-        # documents = state.get("documents", [])
-        
-        # if web_search == "Yes" or not documents:
-        #     logger.info("Decision: Need web search for better results")
-        #     return "websearch"
-        # else:
-        #     logger.info("Decision: Generate answer from relevant documents")
-        return "generate"
     
     def generate(self, state: GraphState) -> GraphState:
         """Generate answer using RAG on retrieved documents."""
@@ -581,6 +471,7 @@ class RagWorkflowNodes:
                 "chat_history": state.get("chat_history", []),  # Preserve chat history
                 "error": f"Error generating answer: {str(e)}"
             }
+    
     def grade_generation(self, state: GraphState) -> str:
         """Grade the generated answer for hallucination and usefulness."""
         try:
@@ -688,33 +579,16 @@ class RagAgent:
             self.workflow = StateGraph(GraphState)
             
             # Add nodes
-            self.workflow.add_node("websearch", self.nodes.web_search)
             self.workflow.add_node("retrieve", self.nodes.retrieve)
             self.workflow.add_node("grade_documents", self.nodes.grade_documents)
             self.workflow.add_node("generate", self.nodes.generate)
             
-            # Set conditional entry point
-            self.workflow.set_conditional_entry_point(
-                self.nodes.route_question,
-                {
-                    "websearch": "websearch",
-                    "vectorstore": "retrieve",
-                }
-            )
+            # Set entry point
+            self.workflow.set_entry_point("retrieve")
             
             # Add edges
             self.workflow.add_edge("retrieve", "grade_documents")
-            
-            self.workflow.add_conditional_edges(
-                "grade_documents",
-                self.nodes.decide_to_generate,
-                {
-                    "websearch": "websearch",
-                    "generate": "generate",
-                }
-            )
-            
-            self.workflow.add_edge("websearch", "generate")
+            self.workflow.add_edge("grade_documents", "generate")
             
             self.workflow.add_conditional_edges(
                 "generate",
@@ -725,6 +599,7 @@ class RagAgent:
                     "not useful": END,
                 }
             )
+            
             # Compile workflow
             self.app = self.workflow.compile(checkpointer=self.memory)
             logger.info("Workflow graph built successfully")
@@ -732,6 +607,7 @@ class RagAgent:
         except Exception as e:
             logger.error(f"Error building workflow: {str(e)}")
             raise
+
     def get_or_create_thread_id(self, session_id: str) -> str:
         """Get an existing thread ID or create a new one for the session."""
         if session_id not in self.thread_ids:
@@ -784,7 +660,6 @@ class RagAgent:
                 if "generation" in final_result:
                     chat_history.append({"role": "assistant", "content": final_result["generation"]})
                     
-                    
                 return {
                     "answer": final_result.get("generation", ""),
                     "sources": [
@@ -808,67 +683,3 @@ class RagAgent:
                 "error": str(e),
                 "execution_time": time.time() - start_time
             }
-# class SessionManager:
-#     def __init__(self, expiration_hours=24):
-#         self.sessions = {}
-#         self.expiration_hours = expiration_hours
-        
-#     def create_session(self, user_id=None):
-#         session_id = str(uuid.uuid4())
-#         self.sessions[session_id] = {
-#             "created_at": time.time(),
-#             "user_id": user_id,
-#             "last_active": time.time()
-#         }
-#         return session_id
-        
-#     def get_session(self, session_id):
-#         if session_id in self.sessions:
-#             # Update last active timestamp
-#             self.sessions[session_id]["last_active"] = time.time()
-#             return session_id
-#         return None
-        
-#     def cleanup_expired_sessions(self):
-#         current_time = time.time()
-#         expiration_time = self.expiration_hours * 3600
-        
-#         expired_sessions = [
-#             session_id for session_id, data in self.sessions.items()
-#             if current_time - data["last_active"] > expiration_time
-#         ]
-        
-#         for session_id in expired_sessions:
-#             del self.sessions[session_id]
-#             # Also clean up from thread_ids and memory
-#             if hasattr(self, 'rag_agent') and self.rag_agent:
-#                 if session_id in self.rag_agent.thread_ids:
-#                     thread_id = self.rag_agent.thread_ids[session_id]
-#                     try:
-#                         self.rag_agent.memory.delete(thread_id)
-#                         del self.rag_agent.thread_ids[session_id]
-#                     except Exception as e:
-#                         logger.error(f"Error cleaning up session {session_id}: {str(e)}")
-
-# # 2. Add periodic cleanup to your main application
-# def setup_periodic_cleanup(session_manager, interval_hours=6):
-#     """Set up periodic cleanup of expired sessions."""
-#     import threading
-    
-#     def cleanup_job():
-#         while True:
-#             try:
-#                 logger.info("Running cleanup of expired sessions")
-#                 session_manager.cleanup_expired_sessions()
-#                 logger.info("Cleanup completed")
-#             except Exception as e:
-#                 logger.error(f"Error during cleanup: {str(e)}")
-            
-#             # Sleep for the specified interval
-#             time.sleep(interval_hours * 3600)
-    
-#     # Start cleanup thread
-#     cleanup_thread = threading.Thread(target=cleanup_job, daemon=True)
-#     cleanup_thread.start()
-    
-#     return cleanup_thread

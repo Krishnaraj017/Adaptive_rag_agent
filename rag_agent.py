@@ -2,6 +2,7 @@ import os
 import time
 import logging
 from typing import Dict, List, Optional, Any, Callable, Union
+import uuid
 from typing_extensions import TypedDict
 from dotenv import load_dotenv
 
@@ -21,7 +22,7 @@ from langgraph.graph import END, StateGraph
 
 # memory saver
 from langgraph.checkpoint.memory import MemorySaver
-from langgraph.prebuilt import create_react_agent
+
 
 # Configure logging
 logging.basicConfig(
@@ -106,6 +107,7 @@ class GraphState(TypedDict):
     web_search: Optional[str]
     documents: Optional[List[Document]]
     error: Optional[str]
+    chat_history: Optional[List[Dict[str, str]]]
 
 # =============================================================================
 # Resource Management
@@ -277,12 +279,16 @@ class Chains:
             # RAG chain
             rag_prompt = PromptTemplate(
                 template="""<|begin_of_text|><|start_header_id|>system<|end_header_id|> You are an assistant for question-answering tasks.
-                Use the following pieces of retrieved context to answer the question. If you don't know the answer, just give relavant answere and don't mention about the context.
-                Use five sentences maximum and keep the answer concise <|eot_id|><|start_header_id|>user<|end_header_id|>
+                Use the following pieces of retrieved context to answer the question. If you don't know the answer, just give relevant answers and don't mention about the context.
+                Use five sentences maximum and keep the answer concise.
+                
+                Previous conversation:
+                {chat_history}
+                <|eot_id|><|start_header_id|>user<|end_header_id|>
                 Question: {question}
                 Context: {context}
                 Answer: <|eot_id|><|start_header_id|>assistant<|end_header_id|>""",
-                input_variables=["question", "context"],
+                input_variables=["question", "context", "chat_history"],
             )
             self.rag_chain = rag_prompt | self.resources.llm | StrOutputParser()
             
@@ -520,30 +526,32 @@ class RagWorkflowNodes:
             logger.info("Generating answer")
             question = state["question"]
             documents = state.get("documents", [])
-            print("+++++++++++++++++++++++++++++++++")
-            print(documents)
-            print("------------------")
-            print(state.get("documents", []))
-            if not documents:
-                logger.warning("No documents available for generation")
-                return {
-                    "documents": [],
-                    "question": question,
-                    "generation": "I don't have enough information to answer this question accurately."
-                }
+            chat_history = state.get("chat_history", [])
+            
+            # Format chat history for the prompt
+            formatted_chat_history = ""
+            for message in chat_history[:-1]:  # Exclude the current question
+                role = message["role"]
+                content = message["content"]
+                formatted_chat_history += f"{role}: {content}\n"
             
             # Format documents for the RAG chain
             context = "\n\n".join(doc.page_content for doc in documents)
             
             start_time = time.time()
-            generation = self.chains.rag_chain.invoke({"context": context, "question": question})
+            generation = self.chains.rag_chain.invoke({
+                "context": context, 
+                "question": question,
+                "chat_history": formatted_chat_history
+            })
             end_time = time.time()
             logger.info(f"Answer generation took {end_time - start_time:.2f} seconds")
             
             return {
                 "documents": documents,
                 "question": question,
-                "generation": generation
+                "generation": generation,
+                "chat_history": chat_history  # Preserve chat history
             }
             
         except Exception as e:
@@ -552,9 +560,9 @@ class RagWorkflowNodes:
                 "documents": state.get("documents", []),
                 "question": state["question"],
                 "generation": "I encountered an error while generating your answer. Please try again.",
+                "chat_history": state.get("chat_history", []),  # Preserve chat history
                 "error": f"Error generating answer: {str(e)}"
             }
-    
     def grade_generation(self, state: GraphState) -> str:
         """Grade the generated answer for hallucination and usefulness."""
         try:
@@ -617,7 +625,9 @@ class RagAgent:
         self.nodes = None
         self.workflow = None
         self.app = None
-        
+        self.thread_ids = {}  # Dictionary to store thread IDs for different conversations
+        self.memory = MemorySaver()  # Initialize memory saver   
+
     def initialize(self, urls: List[str]) -> None:
         """Initialize the agent with the provided document URLs."""
         try:
@@ -698,7 +708,6 @@ class RagAgent:
                 }
             )
             memory = MemorySaver()
-
             # Compile workflow
             self.app = self.workflow.compile(checkpointer=memory)
             logger.info("Workflow graph built successfully")
@@ -706,18 +715,47 @@ class RagAgent:
         except Exception as e:
             logger.error(f"Error building workflow: {str(e)}")
             raise
+    def get_or_create_thread_id(self, session_id: str) -> str:
+        """Get an existing thread ID or create a new one for the session."""
+        if session_id not in self.thread_ids:
+            self.thread_ids[session_id] = f"thread_{session_id}_{int(time.time())}"
+        return self.thread_ids[session_id]
     
-    def run(self, question: str) -> Dict[str, Any]:
-        """Run the RAG agent with the provided question."""
+    def run(self, question: str, session_id: str = "default") -> Dict[str, Any]:
+        """Run the RAG agent with the provided question and session ID."""
         try:
-            logger.info(f"Running RAG agent with question: {question}")
+            logger.info(f"Running RAG agent with question: {question} for session: {session_id}")
             
             start_time = time.time()
             result = None
             
+            # Get or create thread ID for this session
+            thread_id = self.get_or_create_thread_id(session_id)
+            config = {"configurable": {"thread_id": thread_id}}
+            
+            # Get existing chat history if available
+            chat_history = []
+            
+            try:
+                # Try to retrieve previous state
+                previous_state = self.memory.get(config)
+                if previous_state and "chat_history" in previous_state:
+                    chat_history = previous_state["chat_history"]
+                    logger.info(f"Retrieved chat history with {len(chat_history)} messages")
+            except Exception as e:
+                logger.warning(f"Could not retrieve previous state: {str(e)}")
+            
+            # Add the new question to chat history
+            chat_history.append({"role": "user", "content": question})
+            
             # Stream results
-            for output in self.app.stream({"question": question},config={"configurable": {"thread_id": "1"}},
-):
+            for output in self.app.stream(
+                {
+                    "question": question,
+                    "chat_history": chat_history
+                },
+                config=config
+            ):
                 result = output
             
             end_time = time.time()
@@ -725,8 +763,26 @@ class RagAgent:
             
             if result and "generation" in result.get(list(result.keys())[-1], {}):
                 final_result = result[list(result.keys())[-1]]
-              
-                print("+++++++++++++++++++++++++++++++++")
+                
+                # Update chat history with the assistant's response
+                if "generation" in final_result:
+                    chat_history.append({"role": "assistant", "content": final_result["generation"]})
+                    
+                    # Update the state with the new chat history
+                    final_result["chat_history"] = chat_history
+                    
+                    # Save the updated state with required arguments
+                    try:
+                        self.memory.put(
+                            config,  # The configuration (thread_id)
+                            final_result,  # The new state to save
+                            metadata={"timestamp": time.time()},  # Metadata (e.g., timestamp)
+                            new_versions=True  # Indicates this is a new version of the state
+                        )
+                        logger.info(f"Updated chat history with {len(chat_history)} messages")
+                    except Exception as e:
+                        logger.warning(f"Could not save updated state: {str(e)}")
+                
                 return {
                     "answer": final_result.get("generation", ""),
                     "sources": [
@@ -750,3 +806,69 @@ class RagAgent:
                 "error": str(e),
                 "execution_time": time.time() - start_time
             }
+    
+
+# class SessionManager:
+#     def __init__(self, expiration_hours=24):
+#         self.sessions = {}
+#         self.expiration_hours = expiration_hours
+        
+#     def create_session(self, user_id=None):
+#         session_id = str(uuid.uuid4())
+#         self.sessions[session_id] = {
+#             "created_at": time.time(),
+#             "user_id": user_id,
+#             "last_active": time.time()
+#         }
+#         return session_id
+        
+#     def get_session(self, session_id):
+#         if session_id in self.sessions:
+#             # Update last active timestamp
+#             self.sessions[session_id]["last_active"] = time.time()
+#             return session_id
+#         return None
+        
+#     def cleanup_expired_sessions(self):
+#         current_time = time.time()
+#         expiration_time = self.expiration_hours * 3600
+        
+#         expired_sessions = [
+#             session_id for session_id, data in self.sessions.items()
+#             if current_time - data["last_active"] > expiration_time
+#         ]
+        
+#         for session_id in expired_sessions:
+#             del self.sessions[session_id]
+#             # Also clean up from thread_ids and memory
+#             if hasattr(self, 'rag_agent') and self.rag_agent:
+#                 if session_id in self.rag_agent.thread_ids:
+#                     thread_id = self.rag_agent.thread_ids[session_id]
+#                     try:
+#                         self.rag_agent.memory.delete(thread_id)
+#                         del self.rag_agent.thread_ids[session_id]
+#                     except Exception as e:
+#                         logger.error(f"Error cleaning up session {session_id}: {str(e)}")
+
+# # 2. Add periodic cleanup to your main application
+# def setup_periodic_cleanup(session_manager, interval_hours=6):
+#     """Set up periodic cleanup of expired sessions."""
+#     import threading
+    
+#     def cleanup_job():
+#         while True:
+#             try:
+#                 logger.info("Running cleanup of expired sessions")
+#                 session_manager.cleanup_expired_sessions()
+#                 logger.info("Cleanup completed")
+#             except Exception as e:
+#                 logger.error(f"Error during cleanup: {str(e)}")
+            
+#             # Sleep for the specified interval
+#             time.sleep(interval_hours * 3600)
+    
+#     # Start cleanup thread
+#     cleanup_thread = threading.Thread(target=cleanup_job, daemon=True)
+#     cleanup_thread.start()
+    
+#     return cleanup_thread

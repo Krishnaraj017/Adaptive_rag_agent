@@ -4,7 +4,7 @@ import logging
 from typing import Dict, List, Optional, Any, Callable, Union
 from typing_extensions import TypedDict
 from dotenv import load_dotenv
-
+from set_env import set_env_variables
 # LangChain imports
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser, StrOutputParser
@@ -37,11 +37,11 @@ logger = logging.getLogger("rag_agent")
 # =============================================================================
 # Configuration
 # =============================================================================
-GROQ_API_KEY="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"
-os.environ["GROQ_API_KEY"] = GROQ_API_KEY
+# GROQ_API_KEY="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"
+# os.environ["GROQ_API_KEY"] = GROQ_API_KEY
 
-tavily_api_key = "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"
-os.environ["TAVILY_API_KEY"] = tavily_api_key
+# tavily_api_key = "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"
+# os.environ["TAVILY_API_KEY"] = tavily_api_key
 
 
 class Config:
@@ -59,7 +59,7 @@ class Config:
         self.embedding_max_seq_length = 128
         self.web_search_k = 3
         self.collection_name = "local-rag"
-        
+        set_env_variables()
         # Load environment variables or config dict
         self.load_env_variables()
         if config_dict:
@@ -69,6 +69,8 @@ class Config:
         """Load configuration from environment variables."""
         # API keys
         self.groq_api_key = os.getenv("GROQ_API_KEY")
+        print(f"GROQ_API_KEY: {self.groq_api_key}")  # Debugging
+
         self.tavily_api_key = os.getenv("TAVILY_API_KEY")
         
         # Override defaults with environment variables if they exist

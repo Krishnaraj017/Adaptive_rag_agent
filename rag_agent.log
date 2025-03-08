@@ -2705,3 +2705,18 @@
 2025-03-08 08:29:23,121 - rag_agent - INFO - Building workflow graph
 2025-03-08 08:29:23,190 - rag_agent - INFO - Workflow graph built successfully
 2025-03-08 08:29:23,191 - rag_agent - INFO - RAG agent initialized successfully
+2025-03-08 09:59:37,625 - rag_agent - INFO - Initializing RAG agent
+2025-03-08 09:59:37,626 - rag_agent - ERROR - Error initializing RAG agent: GROQ_API_KEY is not set
+2025-03-08 10:02:58,161 - rag_agent - INFO - Initializing RAG agent
+2025-03-08 10:02:58,162 - rag_agent - ERROR - Error initializing RAG agent: GROQ_API_KEY is not set
+2025-03-08 10:04:40,896 - rag_agent - INFO - Initializing RAG agent
+2025-03-08 10:04:40,897 - rag_agent - ERROR - Error initializing RAG agent: GROQ_API_KEY is not set
+2025-03-08 10:06:53,100 - rag_agent - INFO - Initializing RAG agent
+2025-03-08 10:06:53,101 - rag_agent - ERROR - Error initializing RAG agent: GROQ_API_KEY is not set
+2025-03-08 10:15:30,542 - rag_agent - INFO - Initializing RAG agent
+2025-03-08 10:15:30,544 - rag_agent - INFO - Configuration validated: using llama3-70b-8192 model
+2025-03-08 10:15:30,546 - rag_agent - INFO - Initializing embedding model: BAAI/bge-base-en-v1.5
+2025-03-08 10:15:35,901 - rag_agent - INFO - Initializing LLM: llama3-70b-8192
+2025-03-08 10:15:37,159 - rag_agent - INFO - Initializing Tavily search
+2025-03-08 10:15:37,161 - rag_agent - INFO - All resources initialized successfully
+2025-03-08 10:15:37,161 - rag_agent - INFO - Loading documents from 1 URLs

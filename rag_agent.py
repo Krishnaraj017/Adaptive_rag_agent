@@ -19,7 +19,10 @@ from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_groq import ChatGroq
 from langgraph.graph import END, StateGraph
 
+# set env using a function
+from set_env import set_env_variables
 
+# =============================================================================
 # memory saver
 from langgraph.checkpoint.memory import MemorySaver
 
@@ -38,11 +41,6 @@ logger = logging.getLogger("rag_agent")
 # =============================================================================
 # Configuration
 # =============================================================================
-GROQ_API_KEY="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"
-os.environ["GROQ_API_KEY"] = GROQ_API_KEY
-
-tavily_api_key = "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"
-os.environ["TAVILY_API_KEY"] = tavily_api_key
 
 
 class Config:
@@ -60,7 +58,10 @@ class Config:
         self.embedding_max_seq_length = 128
         self.web_search_k = 3
         self.collection_name = "local-rag"
-        
+
+        # set environment variables
+        set_env_variables()
+
         # Load environment variables or config dict
         self.load_env_variables()
         if config_dict:
@@ -172,8 +173,20 @@ class Resources:
             docs_list = []
             
             for url in urls:
-                if "drive.google.com" in url and "export=download" in url:
-                    # Extract file ID from Google Drive URL
+                print(url)
+                if url.startswith("file://"):
+                    # Handle local file paths
+                    file_path = url[len("file://"):]  # Remove the 'file://' prefix
+                    if file_path.endswith('.pdf'):
+                        # Use PyPDFLoader for local PDF files
+                        from langchain_community.document_loaders import PyPDFLoader
+                        pdf_loader = PyPDFLoader(file_path)
+                        pdf_docs = pdf_loader.load()
+                        docs_list.extend(pdf_docs)
+                    else:
+                        logger.error(f"Unsupported file type for local file: {file_path}")
+                elif "drive.google.com" in url and "export=download" in url:
+                    # Handle Google Drive URLs
                     file_id = None
                     if "id=" in url:
                         file_id = url.split("id=")[1].split("&")[0]
@@ -205,6 +218,7 @@ class Resources:
                         logger.error(f"Could not extract file ID from Google Drive URL: {url}")
                 else:
                     # Use WebBaseLoader for regular web pages
+                    from langchain_community.document_loaders import WebBaseLoader
                     web_docs = WebBaseLoader(url).load()
                     docs_list.extend(web_docs)
                     
@@ -269,25 +283,31 @@ class Chains:
             
             # Question router chain
             router_prompt = PromptTemplate(
-                template="""<|begin_of_text|><|start_header_id|>system<|end_header_id|> You are an expert at routing a user question to a vectorstore or web search. try to strictly use the vectorstore. 
-                You do not need to be stringent with the keywords in the question related to these topics. Otherwise, use web-search. Give a binary choice 'web_search'
-                or 'vectorstore' based on the question. Return the a JSON with a single key 'datasource' and no premable or explaination. Question to route: {question} <|eot_id|><|start_header_id|>assistant<|end_header_id|>""",
+                template="""<|begin_of_text|><|start_header_id|>system<|end_header_id|> You are an expert at routing a user question to a vectorstore. try to strictly use the vectorstore. 
+                You do not need to be stringent with the keywords in the question related to these topics.return 'vectorstore' based on the question. Return the a JSON with a single key 'datasource' and no premable or explaination. Question to route: {question} <|eot_id|><|start_header_id|>assistant<|end_header_id|>""",
                 input_variables=["question"],
             )
             self.question_router = router_prompt | self.resources.llm | JsonOutputParser()
             
             # RAG chain
             rag_prompt = PromptTemplate(
-                template="""<|begin_of_text|><|start_header_id|>system<|end_header_id|> You are an assistant for question-answering tasks.
-                Use the following pieces of retrieved context to answer the question. If you don't know the answer, just give relevant answers and don't mention about the context.
-                Use five sentences maximum and keep the answer concise.
-                
-                Previous conversation:
-                {chat_history}
-                <|eot_id|><|start_header_id|>user<|end_header_id|>
-                Question: {question}
-                Context: {context}
-                Answer: <|eot_id|><|start_header_id|>assistant<|end_header_id|>""",
+                template="""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
+            You are an assistant for question-answering tasks. Follow these guidelines:
+
+            1. Use the retrieved context to answer the user's question accurately and concisely.
+            2. If the context doesn't contain the answer, clearly state "I don't have enough information to answer this question" instead of guessing.
+            3. Keep your response focused and relevant to the question asked.
+            4. if context is too long keep answere upto 10 senetenses.
+            5. Use a confident tone when the answer is clearly supported by the context.
+            6. Maintain a neutral, informative tone throughout your response.
+
+            Previous conversation:
+            {chat_history}
+            <|eot_id|><|start_header_id|>user<|end_header_id|>
+
+            Question: {question}
+            Context: {context}
+            Answer: <|eot_id|><|start_header_id|>assistant<|end_header_id|>""",
                 input_variables=["question", "context", "chat_history"],
             )
             self.rag_chain = rag_prompt | self.resources.llm | StrOutputParser()
@@ -315,7 +335,7 @@ class Chains:
                 1. Answer contains specific details from documents
                 2. Answer directionally matches document themes
                 3. Documents mention related entities/context.
-                If the answer contains 'yes' or is history related search validate and return 'yes'. Provide the binary score as a JSON with a
+                If the answer contains 'yes' return 'yes'. Provide the binary score as a JSON with a
                 single key 'score' and no preamble or explanation.<|eot_id|><|start_header_id|>user<|end_header_id|>
                 Here are the facts:
                 \n ------- \n
@@ -371,12 +391,10 @@ class RagWorkflowNodes:
             end_time = time.time()
             logger.info(f"Question routing took {end_time - start_time:.2f} seconds")
             
-            datasource = source.get('datasource', 'web_search')
+            datasource = source.get('datasource', 'vectorstore')
             logger.info(f"Routing question to: {datasource}")
             
-            if datasource == 'web_search':
-                return "websearch"
-            elif datasource == 'vectorstore':
+            if datasource == 'vectorstore':
                 return "vectorstore"
             else:
                 # Default fallback
@@ -456,7 +474,7 @@ class RagWorkflowNodes:
                 return {
                     "documents": documents,
                     "question": question,
-                    "web_search": "Yes"
+                    "web_search": "no"
                 }
             
             # Grade each document
@@ -510,15 +528,15 @@ class RagWorkflowNodes:
     
     def decide_to_generate(self, state: GraphState) -> str:
         """Decide whether to generate an answer or perform web search."""
-        web_search = state.get("web_search", "No")
-        documents = state.get("documents", [])
+        # web_search = state.get("web_search", "No")
+        # documents = state.get("documents", [])
         
-        if web_search == "Yes" or not documents:
-            logger.info("Decision: Need web search for better results")
-            return "websearch"
-        else:
-            logger.info("Decision: Generate answer from relevant documents")
-            return "generate"
+        # if web_search == "Yes" or not documents:
+        #     logger.info("Decision: Need web search for better results")
+        #     return "websearch"
+        # else:
+        #     logger.info("Decision: Generate answer from relevant documents")
+        return "generate"
     
     def generate(self, state: GraphState) -> GraphState:
         """Generate answer using RAG on retrieved documents."""
@@ -704,12 +722,11 @@ class RagAgent:
                 {
                     "not supported": END,
                     "useful": END,
-                    "not useful": "websearch",
+                    "not useful": END,
                 }
             )
-            memory = MemorySaver()
             # Compile workflow
-            self.app = self.workflow.compile(checkpointer=memory)
+            self.app = self.workflow.compile(checkpointer=self.memory)
             logger.info("Workflow graph built successfully")
             
         except Exception as e:
@@ -721,34 +738,33 @@ class RagAgent:
             self.thread_ids[session_id] = f"thread_{session_id}_{int(time.time())}"
         return self.thread_ids[session_id]
     
-    def run(self, question: str, session_id: str = "default") -> Dict[str, Any]:
+    def run(self, question: str, session_id: str = "default") -> dict:
         """Run the RAG agent with the provided question and session ID."""
         try:
             logger.info(f"Running RAG agent with question: {question} for session: {session_id}")
-            
+
             start_time = time.time()
             result = None
-            
+
             # Get or create thread ID for this session
             thread_id = self.get_or_create_thread_id(session_id)
             config = {"configurable": {"thread_id": thread_id}}
-            
+
             # Get existing chat history if available
             chat_history = []
-            
             try:
-                # Try to retrieve previous state
+                # Retrieve previous state
                 previous_state = self.memory.get(config)
                 if previous_state and "chat_history" in previous_state:
                     chat_history = previous_state["chat_history"]
                     logger.info(f"Retrieved chat history with {len(chat_history)} messages")
             except Exception as e:
                 logger.warning(f"Could not retrieve previous state: {str(e)}")
-            
+
             # Add the new question to chat history
             chat_history.append({"role": "user", "content": question})
-            
-            # Stream results
+
+            # Stream results - LangGraph will handle state persistence automatically
             for output in self.app.stream(
                 {
                     "question": question,
@@ -757,32 +773,18 @@ class RagAgent:
                 config=config
             ):
                 result = output
-            
+
             end_time = time.time()
             logger.info(f"RAG agent completed in {end_time - start_time:.2f} seconds")
-            
+
             if result and "generation" in result.get(list(result.keys())[-1], {}):
                 final_result = result[list(result.keys())[-1]]
-                
+
                 # Update chat history with the assistant's response
                 if "generation" in final_result:
                     chat_history.append({"role": "assistant", "content": final_result["generation"]})
                     
-                    # Update the state with the new chat history
-                    final_result["chat_history"] = chat_history
                     
-                    # Save the updated state with required arguments
-                    try:
-                        self.memory.put(
-                            config,  # The configuration (thread_id)
-                            final_result,  # The new state to save
-                            metadata={"timestamp": time.time()},  # Metadata (e.g., timestamp)
-                            new_versions=True  # Indicates this is a new version of the state
-                        )
-                        logger.info(f"Updated chat history with {len(chat_history)} messages")
-                    except Exception as e:
-                        logger.warning(f"Could not save updated state: {str(e)}")
-                
                 return {
                     "answer": final_result.get("generation", ""),
                     "sources": [
@@ -806,8 +808,6 @@ class RagAgent:
                 "error": str(e),
                 "execution_time": time.time() - start_time
             }
-    
-
 # class SessionManager:
 #     def __init__(self, expiration_hours=24):
 #         self.sessions = {}

@@ -18,6 +18,11 @@ from langchain_groq import ChatGroq
 from langgraph.graph import END, StateGraph
 
 
+# For local LLaMA with transformers
+import torch
+from transformers import pipeline
+from langchain.llms import HuggingFacePipeline
+
 # =============================================================================
 # memory saver
 from langgraph.checkpoint.memory import MemorySaver
@@ -45,7 +50,7 @@ class Config:
     def __init__(self, config_dict: Optional[Dict[str, Any]] = None):
         """Initialize with optional config dictionary."""
         # Default configuration
-        self.groq_model = "llama3-70b-8192"
+        self.llama_model = "meta-llama/Llama-3.2-3B-Instruct"  # Using a smaller model by default
         self.temperature = 0.2
         self.embed_model_name = "BAAI/bge-base-en-v1.5"
         self.chunk_size = 512
@@ -53,6 +58,7 @@ class Config:
         self.retriever_k = 2
         self.embedding_max_seq_length = 128
         self.collection_name = "local-rag"
+        self.max_new_tokens = 512  # Control generation length
 
         # set environment variables
         # set_env_variables()
@@ -105,6 +111,7 @@ class GraphState(TypedDict):
 # Resource Management
 # =============================================================================
 
+
 class Resources:
     """Resource manager for the RAG agent."""
     
@@ -115,13 +122,11 @@ class Resources:
         self.embed_model = None
         self.vectorstore = None
         self.retriever = None
+        self.pipe = None
     
     def initialize(self):
         """Initialize all resources."""
         try:
-            # Set environment variables
-            os.environ["GROQ_API_KEY"] = self.config.groq_api_key
-            
             # Initialize embedding model
             logger.info(f"Initializing embedding model: {self.config.embed_model_name}")
             self.embed_model = FastEmbedEmbeddings(
@@ -129,13 +134,48 @@ class Resources:
             )
             self.embed_model.max_seq_length = self.config.embedding_max_seq_length
 
-            # Initialize LLM
-            logger.info(f"Initializing LLM: {self.config.groq_model}")
-            self.llm = ChatGroq(
-                temperature=self.config.temperature,
-                model_name=self.config.groq_model,
-                api_key=self.config.groq_api_key      
+            # Initialize LLaMA model with Transformers pipeline
+            logger.info(f"Initializing local LLaMA model: {self.config.llama_model}")
+            
+            # Create pipeline for text generation using the simplified approach
+            self.pipe = pipeline(
+                "text-generation",
+                model=self.config.llama_model,
+                torch_dtype=torch.bfloat16,
+                device_map="auto",
             )
+            
+            # Wrap the pipeline for LangChain compatibility
+            def llama_wrapper(prompt):
+                """Wrapper for the pipeline to handle chat format expected by LangChain."""
+                messages = [
+                    {"role": "user", "content": prompt}
+                ]
+                response = self.pipe(
+                    messages,
+                    max_new_tokens=self.config.max_new_tokens,
+                    temperature=self.config.temperature,
+                    do_sample=True if self.config.temperature > 0 else False,
+                )
+                # Extract the generated text from the response
+                return response[0]["generated_text"]
+            
+            # Create a custom LLM implementation for LangChain
+            from langchain.llms.base import LLM
+            
+            class CustomLLM(LLM):
+                def _call(self, prompt, stop=None):
+                    return llama_wrapper(prompt)
+                
+                @property
+                def _identifying_params(self):
+                    return {"name": "LlamaTransformersPipeline"}
+                
+                @property
+                def _llm_type(self):
+                    return "custom"
+            
+            self.llm = CustomLLM()
             
             logger.info("All resources initialized successfully")
             return True
@@ -144,6 +184,7 @@ class Resources:
             logger.error(f"Error initializing resources: {str(e)}")
             raise
 
+    # load_documents and process_documents methods remain the same
     def load_documents(self, urls: List[str]) -> List[Document]:
         """Load documents from URLs."""
         try:

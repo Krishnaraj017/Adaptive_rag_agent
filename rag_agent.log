@@ -3930,3 +3930,35 @@
 2025-03-08 12:32:51,547 - rag_agent - INFO - Usefulness check: Useful
 2025-03-08 12:32:51,547 - rag_agent - INFO - Grading took 0.17 seconds
 2025-03-08 12:32:51,553 - rag_agent - INFO - RAG agent completed in 1.08 seconds
+2025-03-08 16:38:59,637 - rag_agent - INFO - Initializing RAG agent
+2025-03-08 16:38:59,639 - rag_agent - INFO - Configuration validated: using meta-llama/Llama-3.2-3B-Instruct model
+2025-03-08 16:38:59,639 - rag_agent - INFO - Initializing embedding model: BAAI/bge-base-en-v1.5
+2025-03-08 16:39:02,970 - rag_agent - INFO - Initializing local LLaMA model: meta-llama/Llama-3.2-3B-Instruct
+2025-03-08 16:39:03,960 - rag_agent - ERROR - Error initializing resources: You are trying to access a gated repo.
+Make sure to have access to it at https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct.
+401 Client Error. (Request ID: Root=1-67cc254f-6e45a9ae0746b66358a80375;99363649-e2e1-48b6-8af5-24fd58a319e6)
+
+Cannot access gated repo for url https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct/resolve/main/config.json.
+Access to model meta-llama/Llama-3.2-3B-Instruct is restricted. You must have access to it and be authenticated to access it. Please log in.
+2025-03-08 16:39:03,963 - rag_agent - ERROR - Error initializing RAG agent: You are trying to access a gated repo.
+Make sure to have access to it at https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct.
+401 Client Error. (Request ID: Root=1-67cc254f-6e45a9ae0746b66358a80375;99363649-e2e1-48b6-8af5-24fd58a319e6)
+
+Cannot access gated repo for url https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct/resolve/main/config.json.
+Access to model meta-llama/Llama-3.2-3B-Instruct is restricted. You must have access to it and be authenticated to access it. Please log in.
+2025-03-08 16:41:04,851 - rag_agent - INFO - Initializing RAG agent
+2025-03-08 16:41:04,852 - rag_agent - INFO - Configuration validated: using meta-llama/Llama-3.2-3B model
+2025-03-08 16:41:04,852 - rag_agent - INFO - Initializing embedding model: BAAI/bge-base-en-v1.5
+2025-03-08 16:41:07,756 - rag_agent - INFO - Initializing local LLaMA model: meta-llama/Llama-3.2-3B
+2025-03-08 16:41:08,306 - rag_agent - ERROR - Error initializing resources: You are trying to access a gated repo.
+Make sure to have access to it at https://huggingface.co/meta-llama/Llama-3.2-3B.
+401 Client Error. (Request ID: Root=1-67cc25cb-78be45231baa956c325849bf;4d2b3349-82c7-4d91-8fe2-0721710348d0)
+
+Cannot access gated repo for url https://huggingface.co/meta-llama/Llama-3.2-3B/resolve/main/config.json.
+Access to model meta-llama/Llama-3.2-3B is restricted. You must have access to it and be authenticated to access it. Please log in.
+2025-03-08 16:41:08,307 - rag_agent - ERROR - Error initializing RAG agent: You are trying to access a gated repo.
+Make sure to have access to it at https://huggingface.co/meta-llama/Llama-3.2-3B.
+401 Client Error. (Request ID: Root=1-67cc25cb-78be45231baa956c325849bf;4d2b3349-82c7-4d91-8fe2-0721710348d0)
+
+Cannot access gated repo for url https://huggingface.co/meta-llama/Llama-3.2-3B/resolve/main/config.json.
+Access to model meta-llama/Llama-3.2-3B is restricted. You must have access to it and be authenticated to access it. Please log in.

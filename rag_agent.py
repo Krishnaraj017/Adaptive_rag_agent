@@ -47,7 +47,7 @@ class Config:
     def __init__(self, config_dict: Optional[Dict[str, Any]] = None):
         """Initialize with optional config dictionary."""
         # Default configuration
-        self.llama_model = "meta-llama/Llama-3.2-3B-Instruct"  # Using a smaller model by default
+        self.llama_model = "meta-llama/Llama-3.2-3B"  # Using a smaller model by default
         self.temperature = 0.2
         self.embed_model_name = "BAAI/bge-base-en-v1.5"
         self.chunk_size = 512

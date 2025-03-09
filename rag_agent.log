@@ -3930,3 +3930,66 @@
 2025-03-08 12:32:51,547 - rag_agent - INFO - Usefulness check: Useful
 2025-03-08 12:32:51,547 - rag_agent - INFO - Grading took 0.17 seconds
 2025-03-08 12:32:51,553 - rag_agent - INFO - RAG agent completed in 1.08 seconds
+2025-03-09 09:17:31,959 - rag_agent - INFO - Initializing RAG agent
+2025-03-09 09:17:31,959 - rag_agent - INFO - Configuration validated: using llama3-70b-8192 model
+2025-03-09 09:17:31,960 - rag_agent - INFO - Initializing embedding model: BAAI/bge-base-en-v1.5
+2025-03-09 09:17:37,632 - rag_agent - INFO - Initializing LLM: llama3-70b-8192
+2025-03-09 09:17:38,696 - rag_agent - INFO - All resources initialized successfully
+2025-03-09 09:17:38,697 - rag_agent - INFO - Loading documents from 1 URLs
+2025-03-09 09:17:40,078 - rag_agent - INFO - Loaded 11 documents
+2025-03-09 09:17:40,079 - rag_agent - INFO - Splitting documents into chunks
+2025-03-09 09:17:40,715 - rag_agent - INFO - Generated 33 document chunks
+2025-03-09 09:17:40,716 - rag_agent - INFO - Creating vectorstore
+2025-03-09 09:17:41,847 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-03-09 09:19:54,667 - rag_agent - INFO - Vectorstore and retriever created successfully
+2025-03-09 09:19:54,674 - rag_agent - INFO - Initializing chains
+2025-03-09 09:19:54,690 - rag_agent - INFO - All chains initialized successfully
+2025-03-09 09:19:54,691 - rag_agent - INFO - Building workflow graph
+2025-03-09 09:19:54,754 - rag_agent - INFO - Workflow graph built successfully
+2025-03-09 09:19:54,754 - rag_agent - INFO - RAG agent initialized successfully
+2025-03-09 09:20:04,616 - rag_agent - INFO - Running RAG agent with question: tell me about the document for session: default
+2025-03-09 09:20:04,644 - rag_agent - INFO - Retrieving documents from vectorstore
+2025-03-09 09:20:06,352 - rag_agent - INFO - Retrieved 4 documents in 1.70 seconds
+2025-03-09 09:20:06,354 - rag_agent - INFO - Grading documents for relevance
+2025-03-09 09:20:06,985 - httpx - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-09 09:20:07,404 - httpx - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-09 09:20:08,009 - httpx - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-09 09:20:08,266 - httpx - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-09 09:20:08,270 - rag_agent - INFO - Document relevance: 4/4 docs relevant (1.00)
+2025-03-09 09:20:08,271 - rag_agent - INFO - Generating answer
+2025-03-09 09:20:08,970 - httpx - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-09 09:20:08,972 - rag_agent - INFO - Answer generation took 0.70 seconds
+2025-03-09 09:20:08,973 - rag_agent - INFO - Grading generation
+2025-03-09 09:20:09,141 - httpx - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2025-03-09 09:20:09,143 - groq._base_client - INFO - Retrying request to /openai/v1/chat/completions in 19.000000 seconds
+2025-03-09 09:20:28,616 - httpx - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-09 09:20:28,619 - rag_agent - INFO - Hallucination check: Grounded
+2025-03-09 09:20:28,718 - httpx - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2025-03-09 09:20:28,719 - groq._base_client - INFO - Retrying request to /openai/v1/chat/completions in 7.000000 seconds
+2025-03-09 09:20:36,256 - httpx - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-09 09:20:36,259 - rag_agent - INFO - Usefulness check: Useful
+2025-03-09 09:20:36,259 - rag_agent - INFO - Grading took 27.29 seconds
+2025-03-09 09:20:36,266 - rag_agent - INFO - RAG agent completed in 31.65 seconds
+2025-03-09 09:21:57,721 - rag_agent - INFO - Running RAG agent with question: explain it in 10 points for session: default
+2025-03-09 09:21:57,805 - rag_agent - INFO - Retrieving documents from vectorstore
+2025-03-09 09:21:57,966 - rag_agent - INFO - Retrieved 4 documents in 0.16 seconds
+2025-03-09 09:21:57,968 - rag_agent - INFO - Grading documents for relevance
+2025-03-09 09:21:58,232 - httpx - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-09 09:21:58,428 - httpx - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-09 09:21:58,612 - httpx - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-09 09:21:58,848 - httpx - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-09 09:21:58,851 - rag_agent - INFO - Document relevance: 4/4 docs relevant (1.00)
+2025-03-09 09:21:58,852 - rag_agent - INFO - Generating answer
+2025-03-09 09:22:00,032 - httpx - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-09 09:22:00,036 - rag_agent - INFO - Answer generation took 1.18 seconds
+2025-03-09 09:22:00,037 - rag_agent - INFO - Grading generation
+2025-03-09 09:22:00,101 - httpx - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2025-03-09 09:22:00,102 - groq._base_client - INFO - Retrying request to /openai/v1/chat/completions in 9.000000 seconds
+2025-03-09 09:22:09,489 - httpx - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-09 09:22:09,492 - rag_agent - INFO - Hallucination check: Grounded
+2025-03-09 09:22:09,550 - httpx - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2025-03-09 09:22:09,562 - groq._base_client - INFO - Retrying request to /openai/v1/chat/completions in 3.000000 seconds
+2025-03-09 09:22:12,722 - httpx - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-09 09:22:12,724 - rag_agent - INFO - Usefulness check: Not useful
+2025-03-09 09:22:12,725 - rag_agent - INFO - Grading took 12.69 seconds
+2025-03-09 09:22:12,727 - rag_agent - INFO - RAG agent completed in 15.00 seconds

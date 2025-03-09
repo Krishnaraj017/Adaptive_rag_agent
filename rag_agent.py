@@ -43,10 +43,10 @@ class Config:
         """Initialize with optional config dictionary."""
         # Default configuration
         self.groq_model = "llama3-70b-8192"
-        self.temperature = 0.2
+        self.temperature = 0
         self.embed_model_name = "BAAI/bge-base-en-v1.5"
-        self.chunk_size = 1024  # Increased from 512
-        self.chunk_overlap = 200  # Added overlap
+        self.chunk_size = 512  # Increased from 512
+        self.chunk_overlap = 10  # Added overlap
         self.retriever_k = 4  # Increased from 2
         self.embedding_max_seq_length = 512  # Increased for better embeddings
         self.collection_name = "local-rag"
